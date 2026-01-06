@@ -1,0 +1,44 @@
+C4Deployment
+    title Deployment diagram for <Your System> in <Environment>
+
+    Deployment_Node(client, "Client Device", "Browser / Mobile") {
+        Container(ui, "<UI>", "Browser / Mobile App", "Renders UI and calls API")
+    }
+
+    Deployment_Node(edge, "Edge", "CDN / WAF / Load Balancer") {
+        Container(cdn, "CDN", "Caching", "Serves static content")
+        Container(lb, "Load Balancer", "Routing", "Routes requests to backend")
+    }
+
+    Deployment_Node(platform, "Platform", "Kubernetes / VM Cluster") {
+
+        Deployment_Node(appTier, "Application Tier", "Pods / VMs") {
+            Container(api, "<API Application>", "Java/.NET/Node", "Handles requests")
+            Container(worker, "<Background Worker>", "Java/.NET/Node", "Consumes messages")
+        }
+
+        Deployment_Node(dataTier, "Data Tier", "Managed Services") {
+            ContainerDb(db, "<Primary Database>", "PostgreSQL/MySQL", "Persistent data")
+            ContainerDb(cache, "<Cache>", "Redis", "Cache/sessions")
+            Container(queue, "<Message Broker>", "Kafka/RabbitMQ/SQS", "Async messaging")
+            Container(files, "<Object Storage>", "S3/Azure Blob", "Files")
+        }
+    }
+
+    System_Ext(extAuth, "<Identity Provider>", "OIDC/SAML")
+    System_Ext(extObs, "<Observability>", "Logs/Metrics/Tracing")
+
+%% Relationships (connect containers/systems, not Deployment_Nodes)
+    Rel(ui, cdn, "Loads static assets", "HTTPS")
+    Rel(ui, lb, "Calls API", "HTTPS")
+    Rel(lb, api, "Forwards requests", "HTTPS")
+
+    Rel(api, db, "Reads/Writes", "SQL")
+    Rel(api, cache, "Reads/Writes", "TCP")
+    Rel(api, queue, "Publishes", "AMQP/HTTP")
+    Rel(worker, queue, "Consumes", "AMQP/HTTP")
+    Rel(api, files, "Stores/reads", "HTTPS")
+
+    Rel(api, extAuth, "Auth", "OIDC")
+    Rel(api, extObs, "Telemetry", "OTLP/HTTP")
+    Rel(worker, extObs, "Telemetry", "OTLP/HTTP")

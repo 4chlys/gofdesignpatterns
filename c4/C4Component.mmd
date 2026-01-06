@@ -1,0 +1,38 @@
+C4Component
+    title Component diagram for <API Application> container
+
+    Person(user, "<Primary User>", "Uses the product")
+
+    Container_Boundary(api, "<API Application>") {
+
+        Component(controller, "<Controller / API Layer>", "HTTP", "Validates input, maps requests")
+        Component(service, "<Service Layer>", "Application Service", "Use-cases / orchestration")
+        Component(domain, "<Domain Model>", "Domain", "Entities, value objects, invariants")
+        Component(repo, "<Repository>", "Data Access", "Persists and loads domain objects")
+
+        Component(auth, "<Auth Module>", "Security", "Token validation, permissions")
+        Component(events, "<Event Publisher>", "Messaging", "Publishes domain/integration events")
+        Component(integrations, "<External Clients>", "HTTP Clients", "Talks to third-party APIs")
+
+        ComponentDb(db, "<Primary Database>", "SQL", "Stores core data")
+        Component(queue, "<Message Broker>", "Kafka/RabbitMQ/SQS", "Async messaging")
+    }
+
+    System_Ext(extAuth, "<Identity Provider>", "OIDC/SAML")
+    System_Ext(extPay, "<Payment Provider>", "Payments")
+
+%% Relationships
+    Rel(user, controller, "Calls", "HTTPS/JSON")
+    Rel(controller, auth, "Authorizes", "In-process")
+    Rel(controller, service, "Invokes use-cases", "In-process")
+
+    Rel(service, domain, "Creates/updates", "In-process")
+    Rel(service, repo, "Loads/saves", "In-process")
+
+    Rel(repo, db, "Reads/Writes", "SQL")
+    Rel(service, events, "Publishes events", "In-process")
+    Rel(events, queue, "Sends messages", "AMQP/HTTP")
+
+    Rel(integrations, extAuth, "OIDC flows", "HTTPS")
+    Rel(integrations, extPay, "Charges/refunds", "HTTPS")
+    Rel(service, integrations, "Calls", "In-process")

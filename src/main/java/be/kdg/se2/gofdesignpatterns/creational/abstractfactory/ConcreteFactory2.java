@@ -1,0 +1,11 @@
+package be.kdg.se2.gofdesignpatterns.creational.abstractfactory;
+
+class ConcreteFactory2 implements AbstractFactory {
+    public AbstractProductA createProductA() {
+        return new ProductA2();
+    }
+
+    public AbstractProductB createProductB() {
+        return new ProductB2();
+    }
+}

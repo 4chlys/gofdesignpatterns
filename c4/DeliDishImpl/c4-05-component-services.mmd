@@ -1,0 +1,79 @@
+﻿graph TB
+    subgraph PresentationLayer["<b>FROM PRESENTATION LAYER</b>"]
+        Controller["BestellingController<br/>[REST Controller]"]
+    end
+    
+    subgraph BusinessServices["<b>BUSINESS SERVICES LAYER</b>"]
+        BestellingService["<b>BestellingService</b><br/>[Spring @Service]<br/><br/><b>Injected Dependencies:</b><br/>- persoonService: PersoonService<br/>- bestellingRepo: BestellingRepository<br/>- clock: Clock<br/>- policyFactory: DeliveryPolicyFactory<br/><br/><b>Core Methods:</b><br/>+ getBeschikbareLeveringen(String, Position): List&lt;Bestelling&gt;<br/>+ accepteerOpdracht(String, int): String<br/>+ addOrder(Bestelling): void<br/>+ getOrderById(int): Bestelling<br/>+ getOrdersByStatus(BestelStatus): Collection<br/><br/><b>Private Methods:</b><br/>- isToegelatenVolgensPremium(Bestelling, Koerier): boolean<br/>- kanAfhalenBinnenBereidingstijd(Koerier, Bestelling): boolean<br/><br/><b>Responsibilities:</b><br/>• Coordinate order logistics<br/>• Apply delivery policies (Belgium/Germany)<br/>• Filter koeriers (premium, availability, distance)<br/>• Calculate delivery feasibility"]
+        
+        PersoonService["<b>PersoonService</b><br/>[Spring @Service]<br/><br/><b>Injected Dependencies:</b><br/>- klantRepo: KlantRepository<br/>- koerierRepo: KoerierRepository<br/><br/><b>Methods:</b><br/>+ getKlant(String): Klant<br/>+ getKoerier(String): Koerier<br/>+ getAllKoeriers(): Collection&lt;Koerier&gt;<br/>+ updateKoerier(Koerier): void<br/>+ recordDeliveryPoint(Koerier, int, String): void<br/><br/><b>Responsibilities:</b><br/>• Manage customer data<br/>• Manage koerier data<br/>• Track delivery points<br/>• Update koerier status"]
+        
+        RestaurantService["<b>RestaurantService</b><br/>[Spring @Service]<br/><br/><b>Injected Dependencies:</b><br/>- restaurantRepo: RestaurantRepository<br/><br/><b>Methods:</b><br/>+ getRestaurant(String): Restaurant<br/>+ addRestaurant(Restaurant): Restaurant<br/>+ getRestaurants(): Collection&lt;Restaurant&gt;<br/>+ deleteAllRestaurants(): void<br/><br/><b>Responsibilities:</b><br/>• Manage restaurant data<br/>• Menu management<br/>• Restaurant lookup"]
+        
+        NotificationService["<b>NotificationService</b><br/>[Spring @Service]<br/><br/><b>Injected Dependencies:</b><br/>- repository: NotificationRepository<br/>- clock: Clock<br/><br/><b>Methods:</b><br/>+ recordNotification(Partij, Bestelling, BestelEvent): Notification<br/>+ getNotificationsFor(String): List&lt;Notification&gt;<br/>+ getAll(): List&lt;Notification&gt;<br/><br/><b>Responsibilities:</b><br/>• Record order events<br/>• Send notifications to parties<br/>• Track notification history"]
+        
+        RegistratieService["<b>RegistratieService</b><br/>[Spring @Service]<br/><br/><b>Injected Dependencies:</b><br/>- koerierRepo: KoerierRepository<br/>- restoRepo: RestaurantRepository<br/><br/><b>Methods:</b><br/>+ registreerKoerierBijRestaurant(String, String): void<br/>+ registreerPartijBijRestaurant(Partij, String): void<br/><br/><b>Responsibilities:</b><br/>• Register observers<br/>• Setup notification listeners<br/>• Create PartijNotificationObserver instances"]
+    end
+    
+    subgraph PersistenceLayer["<b>TO PERSISTENCE LAYER</b>"]
+        BestellingRepo["BestellingRepository<br/>[Interface]"]
+        KoerierRepo["KoerierRepository<br/>[Interface]"]
+        KlantRepo["KlantRepository<br/>[Interface]"]
+        RestaurantRepo["RestaurantRepository<br/>[Interface]"]
+        NotificationRepo["NotificationRepository<br/>[Interface]"]
+    end
+    
+    subgraph Infrastructure["<b>INFRASTRUCTURE</b>"]
+        PolicyFactory["DeliveryPolicyFactory<br/>[Component]"]
+        Clock["Clock<br/>[Component]"]
+    end
+    
+    %% Presentation to Services
+    Controller -->|"Delegates"| BestellingService
+    Controller -->|"Uses"| PersoonService
+    
+    %% Service Dependencies
+    BestellingService -->|"Get koerier info<br/>Update delivery points"| PersoonService
+    BestellingService -->|"Get policy for land"| PolicyFactory
+    BestellingService -->|"Time calculations"| Clock
+    
+    RegistratieService -->|"Create notifications<br/>for observers"| NotificationService
+    
+    %% Services to Repositories
+    BestellingService -->|"CRUD operations<br/>getMetStatus()"| BestellingRepo
+    PersoonService -->|"CRUD operations<br/>getBeschikbaar()"| KoerierRepo
+    PersoonService -->|"CRUD operations<br/>getByEmail()"| KlantRepo
+    RestaurantService -->|"CRUD operations<br/>getByNaam()"| RestaurantRepo
+    NotificationService -->|"save()<br/>getByRecipient()"| NotificationRepo
+    RegistratieService -->|"Register koeriers"| KoerierRepo
+    RegistratieService -->|"Register restaurants"| RestaurantRepo
+    
+    style BestellingService fill:#4da6ff,stroke:#0066cc,color:#000000,stroke-width:3px
+    style PersoonService fill:#66b3ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style RestaurantService fill:#66b3ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style NotificationService fill:#66b3ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style RegistratieService fill:#66b3ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style Controller fill:#ff9999,stroke:#cc0000,color:#000000
+    style BestellingRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style KoerierRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style KlantRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style RestaurantRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style NotificationRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style PolicyFactory fill:#ffdb4d,stroke:#cc9900,color:#000000
+    style Clock fill:#ffdb4d,stroke:#cc9900,color:#000000
+    style BusinessServices fill:#e6f3ff,stroke:#0066cc,stroke-width:3px
+    style PersistenceLayer fill:#e6ffe6,stroke:#00cc00,stroke-width:2px
+    style Infrastructure fill:#fff9e6,stroke:#cc9900,stroke-width:2px
+    
+    subgraph Legend[" "]
+        L1["Core Service = Main business logic"]
+        L2["Supporting Service = Helper service"]
+        L3["Repository = Data access"]
+        L4["Infrastructure = Utilities"]
+    end
+    
+    style Legend fill:#ffffff,stroke:#333,stroke-width:2px
+    style L1 fill:#4da6ff,stroke:#0066cc,color:#000000,stroke-width:3px
+    style L2 fill:#66b3ff,stroke:#0066cc,color:#000000
+    style L3 fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style L4 fill:#ffdb4d,stroke:#cc9900,color:#000000

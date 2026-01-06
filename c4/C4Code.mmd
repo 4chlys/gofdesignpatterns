@@ -1,0 +1,31 @@
+classDiagram
+    direction LR
+
+    class Controller {
+        +handleRequest(dto)
+    }
+
+    class Service {
+        +useCase(input)
+    }
+
+    class Repository {
+        +findById(id)
+        +save(entity)
+    }
+
+    class DomainEntity {
+        -id
+        -state
+        +businessMethod()
+    }
+
+    class ExternalClient {
+        +callExternalApi(request)
+    }
+
+    Controller --> Service : calls
+    Service --> Repository : loads/saves
+    Repository --> DomainEntity : maps
+    Service --> DomainEntity : mutates/validates
+    Service --> ExternalClient : integrates

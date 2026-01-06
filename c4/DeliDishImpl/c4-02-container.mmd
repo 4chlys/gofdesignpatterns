@@ -1,0 +1,87 @@
+﻿graph TB
+    subgraph Users[" "]
+        Customer["👤 Klant"]
+        Restaurant["👤 Restauranthouder"]
+        Courier["👤 Koerier"]
+    end
+    
+    subgraph Cloud["Cloud Infrastructure"]
+        subgraph WebServers["Web Application Servers (2x load balanced)"]
+            FrontOffice["<b>Front Office Server</b><br/>[Container: Spring Boot]<br/><br/>Web applicatie voor klanten<br/>Restaurant browsing, bestellen"]
+            BackOffice["<b>Back Office Server</b><br/>[Container: Spring Boot]<br/><br/>Web applicatie voor restaurants<br/>en koeriers. Menu beheer,<br/>opdracht verdeling"]
+        end
+        
+        subgraph BackupServers["Backup System (Failover)"]
+            FrontOfficeBackup["<b>Front Office Backup</b><br/>[Container: Spring Boot]<br/><br/>Automatic failover instance"]
+            BackOfficeBackup["<b>Back Office Backup</b><br/>[Container: Spring Boot]<br/><br/>Automatic failover instance"]
+        end
+        
+        subgraph DBServers["Database Servers"]
+            PrimaryDB["<b>Primary Database</b><br/>[Container: Database]<br/><br/>Stores: Bestellingen,<br/>Restaurants, Gebruikers,<br/>Gerechten, Notifications"]
+            BackupDB["<b>Backup Database</b><br/>[Container: Database]<br/><br/>Real-time replica<br/>for failover"]
+        end
+        
+        MobileApp["<b>Mobile App</b><br/>[Container: Cross-platform]<br/><br/>Voor koeriers<br/>Opdrachten accepteren,<br/>status updates"]
+        
+        WebApp["<b>Web Application</b><br/>[Container: Browser SPA]<br/><br/>Voor klanten en restaurants<br/>JavaScript, HTML, CSS"]
+    end
+    
+    subgraph External["External Systems"]
+        Ingenico["<b>Ingenico Payment API</b><br/>[External]<br/><br/>HTTPS/REST"]
+        Google["<b>Google Maps API</b><br/>[External]<br/><br/>OAuth + Geocoding<br/>HTTPS/REST"]
+        Facebook["<b>Facebook API</b><br/>[External]<br/><br/>OAuth<br/>HTTPS/REST"]
+    end
+    
+    Customer -->|"HTTPS"| WebApp
+    Restaurant -->|"HTTPS"| WebApp
+    Courier -->|"HTTPS/REST"| MobileApp
+    
+    WebApp -->|"REST/JSON<br/>API calls"| FrontOffice
+    WebApp -->|"REST/JSON<br/>API calls"| BackOffice
+    MobileApp -->|"REST/JSON<br/>API calls"| BackOffice
+    
+    FrontOffice -->|"JDBC"| PrimaryDB
+    BackOffice -->|"JDBC"| PrimaryDB
+    
+    FrontOffice -.->|"Automatic<br/>failover"| FrontOfficeBackup
+    BackOffice -.->|"Automatic<br/>failover"| BackOfficeBackup
+    FrontOfficeBackup -->|"JDBC"| BackupDB
+    BackOfficeBackup -->|"JDBC"| BackupDB
+    PrimaryDB -.->|"Real-time<br/>replication"| BackupDB
+    
+    FrontOffice -->|"HTTPS"| Ingenico
+    FrontOffice -->|"HTTPS"| Google
+    FrontOffice -->|"HTTPS"| Facebook
+    BackOffice -->|"HTTPS"| Google
+    
+    style FrontOffice fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:2px
+    style BackOffice fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:2px
+    style FrontOfficeBackup fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:1px,stroke-dasharray: 5 5
+    style BackOfficeBackup fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:1px,stroke-dasharray: 5 5
+    style PrimaryDB fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:2px
+    style BackupDB fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:1px,stroke-dasharray: 5 5
+    style MobileApp fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:2px
+    style WebApp fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:2px
+    style Customer fill:#08427b,stroke:#052e56,color:#ffffff
+    style Restaurant fill:#08427b,stroke:#052e56,color:#ffffff
+    style Courier fill:#08427b,stroke:#052e56,color:#ffffff
+    style Ingenico fill:#999999,stroke:#6b6b6b,color:#ffffff
+    style Google fill:#999999,stroke:#6b6b6b,color:#ffffff
+    style Facebook fill:#999999,stroke:#6b6b6b,color:#ffffff
+    style Cloud fill:#e8f4f8,stroke:#1168bd,stroke-width:2px
+    style WebServers fill:#f0f8ff,stroke:#1168bd,stroke-width:1px
+    style BackupServers fill:#fff8f0,stroke:#1168bd,stroke-width:1px
+    style DBServers fill:#f8fff0,stroke:#1168bd,stroke-width:1px
+    
+    subgraph Legend[" "]
+        L1["Container = Deployable unit"]
+        L2["Solid = Primary system"]
+        L3["Dashed = Backup/Failover"]
+        L4["External = Third-party API"]
+    end
+    
+    style Legend fill:#ffffff,stroke:#333,stroke-width:2px
+    style L1 fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style L2 fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:2px
+    style L3 fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-dasharray: 5 5
+    style L4 fill:#999999,stroke:#6b6b6b,color:#ffffff

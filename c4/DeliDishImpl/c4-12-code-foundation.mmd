@@ -1,0 +1,117 @@
+﻿classDiagram
+    %% Foundation Package - Contact & Location
+    class ContactInfo {
+        <<record>>
+        <<Value Object>>
+        -adres : Adres
+        -mail : String
+        -telefoonnummer : String
+        +ContactInfo(Adres, String, String)
+        +getAdres() Adres
+        +getMail() String
+        +getTelefoonnummer() String
+    }
+    
+    class Adres {
+        <<record>>
+        <<Value Object>>
+        -street : String
+        -number : String
+        -gemeente : Gemeente
+        -position : Position
+        +Adres(String, String, Gemeente, Position)
+        +getStreet() String
+        +getNumber() String
+        +getGemeente() Gemeente
+        +getPosition() Position
+    }
+    
+    class Position {
+        <<Value Object>>
+        -latitude : double
+        -longitude : double
+        +Position(double, double)
+        +getLatitude() double
+        +getLongitude() double
+    }
+    
+    class Gemeente {
+        <<record>>
+        <<Value Object>>
+        -land : Land
+        -postcode : String
+        -naam : String
+        +Gemeente(Land, String, String)
+        +getLand() Land
+        +getPostcode() String
+        +getNaam() String
+    }
+    
+    class Land {
+        <<enumeration>>
+        BELGIUM
+        GERMANY
+    }
+    
+    class Rekeningnummer {
+        <<Value Object>>
+        -iban : String
+        +Rekeningnummer(String)
+        +getIban() String
+        +validate() boolean
+    }
+    
+    class Move {
+        <<interface>>
+        +move() void
+    }
+    
+    %% Financial Package
+    class Betaling {
+        <<Entity>>
+        -id : long
+        -bedrag : double
+        +Betaling(double)
+        +getId() long
+        +setId(long) void
+        +getBedrag() double
+    }
+    
+    class Transactie {
+        <<Entity>>
+        +Transactie(double)
+        +transact() void
+        +isCompleted() boolean
+    }
+    
+    %% Relationships - Foundation
+    ContactInfo --> "1" Adres : has
+    Adres --> "1" Gemeente : located in
+    Adres --> "1" Position : has coordinates
+    Gemeente --> "1" Land : belongs to
+    
+    %% Relationships - Financial
+    Transactie --|> Betaling : extends
+    
+    %% External usage (shown as notes)
+    Partij ..> ContactInfo : has
+    Partij ..> Rekeningnummer : has
+    Bestelling ..> Adres : delivered to
+    Restaurant ..> Position : derived from
+    Koerier ..> Position : current location
+    
+    note for ContactInfo "Value Object (Record):<br/>- Immutable<br/>- Email is unique identifier<br/>- Used by all Partij subclasses<br/><br/>Validation:<br/>- Email format (RFC 5322)<br/>- Phone number format<br/>- Adres not null"
+    
+    note for Adres "Value Object (Record):<br/>- Immutable<br/>- Full address information<br/>- Position for distance calculations<br/><br/>Position obtained:<br/>- Via Google Geocoding API<br/>- Converts 'street, number, gemeente' → lat/long<br/><br/>Used by:<br/>- Klant delivery addresses<br/>- Restaurant location<br/>- Distance calculations"
+    
+    note for Position "Value Object:<br/>- Immutable<br/>- WGS84 coordinate system<br/>- Latitude: -90 to +90<br/>- Longitude: -180 to +180<br/><br/>Used by:<br/>- AfstandsMeter (distance calc)<br/>- Koerier laatstePositie<br/>- Restaurant location<br/><br/>Calculations:<br/>- Haversine formula (Spatial4J)<br/>- Great circle distance"
+    
+    note for Gemeente "Value Object (Record):<br/>- Immutable<br/>- Groups addresses by region<br/>- Land determines DeliveryPolicy<br/><br/>Examples:<br/>- BELGIUM: '2000', 'Antwerpen'<br/>- GERMANY: '10115', 'Berlin'<br/><br/>Usage:<br/>- DeliveryPolicyFactory uses Land<br/>- Statistics per gemeente"
+    
+    note for Land "Enumeration:<br/>- Only 2 values currently<br/>- Determines delivery rules:<br/><br/>BELGIUM:<br/>- Speed: 20 km/u<br/>- Premium period: 5 min<br/>- Top koeriers: 7<br/><br/>GERMANY:<br/>- Speed: 30 km/u  <br/>- No premium (equal treatment)<br/>- All koeriers see immediately<br/><br/>Extensible for future countries"
+    
+    note for Rekeningnummer "Value Object:<br/>- Immutable<br/>- IBAN format validation<br/>- Required for payments<br/><br/>Validation:<br/>- Length: 15-34 characters<br/>- Check digit algorithm<br/>- Country code valid<br/><br/>Used by:<br/>- Restaurant (receive 70%)<br/>- Koerier (weekly payout)<br/>- Optional for Klant"
+    
+    note for Betaling "Entity (planned):<br/>- Payment records<br/>- Ingenico integration<br/><br/>Flow:<br/>1. Klant pays 100%<br/>2. 70% → Restaurant<br/>3. 30% → DeliDish<br/><br/>Transactie:<br/>- Adds processing logic<br/>- Status tracking<br/>- Idempotency"
+    
+    note for Move "Interface (future):<br/>- For moving entities<br/>- Could be implemented by Koerier<br/>- Real-time position updates<br/><br/>Planned features:<br/>- GPS tracking<br/>- Route optimization<br/>- ETA calculation"

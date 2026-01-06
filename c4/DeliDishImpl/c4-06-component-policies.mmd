@@ -1,0 +1,57 @@
+﻿graph TB
+    BestellingService["BestellingService<br/>[Service]<br/><br/>Needs country-specific<br/>delivery rules"]
+    RegistratieService["RegistratieService<br/>[Service]<br/><br/>Registers observers<br/>for notifications"]
+    
+    PolicyFactory["<b>DeliveryPolicyFactory</b><br/>[Factory Pattern]<br/>[Spring Component]<br/><br/>Map of Land to DeliveryPolicy<br/><br/>getPolicyFor(Land): DeliveryPolicy<br/>registerPolicy(DeliveryPolicy): void<br/><br/>Returns appropriate policy based on<br/>restaurant's country via gemeente"]
+    
+    PolicyInterface["DeliveryPolicy<br/>[Interface]<br/><br/>getAverageSpeedKmPerHour(): double<br/>getPriorityListSize(): int<br/>isPremiumRestricted(): boolean<br/>getLand(): Land"]
+    
+    BelgiumPolicy["<b>BelgiumDeliveryPolicy</b><br/>[Spring Component]<br/>[Implements DeliveryPolicy]<br/><br/>Speed: 20 km/u<br/>Priority list: 7 koeriers<br/>Premium restricted: YES<br/>Land: BELGIUM<br/><br/>First 5 min: Only top 7 koeriers<br/>After 5 min: All koeriers"]
+    
+    GermanyPolicy["<b>GermanyDeliveryPolicy</b><br/>[Spring Component]<br/>[Implements DeliveryPolicy]<br/><br/>Speed: 30 km/u<br/>Priority list: 0<br/>Premium restricted: NO<br/>Land: GERMANY<br/><br/>All koeriers see order immediately<br/>No premium period due to German law"]
+    
+    Restaurant["<b>Restaurant</b><br/>[Aggregate Root]<br/><br/>observers: List of BestellingObserver<br/><br/>registreerObserver(observer)<br/>notifyObservers(Bestelling, BestelEvent)<br/><br/>Notifies all registered observers<br/>when order status changes"]
+    
+    ObserverInterface["BestellingObserver<br/>[Interface]<br/><br/>onBestellingEvent(Bestelling, BestelEvent)"]
+    
+    PartijObserver["<b>PartijNotificationObserver</b><br/>[Implements BestellingObserver]<br/><br/>partij: Partij<br/>notificationService: NotificationService<br/><br/>When notified of order event:<br/>1. Create Notification entity<br/>2. Save via NotificationService<br/>3. Notify partij"]
+    
+    NotificationService["<b>NotificationService</b><br/>[Spring Service]<br/><br/>recordNotification(): Notification<br/>getNotificationsFor(String): List<br/><br/>Persist notification records<br/>for audit trail"]
+    
+    Notification["<b>Notification</b><br/>[Entity]<br/><br/>id: long<br/>recipientEmail: String<br/>bestellingId: long<br/>status: BestelStatus<br/>timestamp: Instant"]
+    
+    Gemeente["<b>Gemeente</b><br/>[Value Object]<br/><br/>land: Land<br/>postcode: String<br/>naam: String"]
+    
+    Land["<b>Land</b><br/>[Enum]<br/><br/>BELGIUM<br/>GERMANY"]
+    
+    BestellingService -->|"1. Get policy for<br/>restaurant's land"| PolicyFactory
+    PolicyFactory -->|"2. Returns policy"| PolicyInterface
+    PolicyInterface <-.->|"implements"| BelgiumPolicy
+    PolicyInterface <-.->|"implements"| GermanyPolicy
+    PolicyFactory -.->|"creates/caches"| BelgiumPolicy
+    PolicyFactory -.->|"creates/caches"| GermanyPolicy
+    
+    BelgiumPolicy -.->|"returns"| Land
+    GermanyPolicy -.->|"returns"| Land
+    Gemeente -->|"has"| Land
+    
+    RegistratieService -->|"1. Create observer"| PartijObserver
+    RegistratieService -->|"2. Register observer"| Restaurant
+    Restaurant -->|"3. When order<br/>status changes"| ObserverInterface
+    ObserverInterface <-.->|"implements"| PartijObserver
+    PartijObserver -->|"4. Record notification"| NotificationService
+    NotificationService -.->|"creates"| Notification
+    
+    style PolicyFactory fill:#ffdb4d,stroke:#cc9900,color:#000000,stroke-width:3px
+    style PolicyInterface fill:#ffffcc,stroke:#cc9900,color:#000000,stroke-width:2px
+    style BelgiumPolicy fill:#fff4cc,stroke:#cc9900,color:#000000,stroke-width:2px
+    style GermanyPolicy fill:#fff4cc,stroke:#cc9900,color:#000000,stroke-width:2px
+    style Restaurant fill:#c9e7f2,stroke:#5d82a8,color:#000000,stroke-width:2px
+    style ObserverInterface fill:#e6ccff,stroke:#9933ff,color:#000000,stroke-width:2px
+    style PartijObserver fill:#f0e6ff,stroke:#9933ff,color:#000000,stroke-width:2px
+    style NotificationService fill:#66b3ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style Notification fill:#c9e7f2,stroke:#5d82a8,color:#000000
+    style Gemeente fill:#c9e7f2,stroke:#5d82a8,color:#000000
+    style Land fill:#ffffcc,stroke:#cc9900,color:#000000
+    style BestellingService fill:#66b3ff,stroke:#0066cc,color:#000000
+    style RegistratieService fill:#66b3ff,stroke:#0066cc,color:#000000

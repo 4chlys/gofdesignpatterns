@@ -1,0 +1,27 @@
+C4Context
+    title System Context diagram for <Your System>
+
+%% People
+    Person(user, "<Primary User>", "What they do / why they care")
+    Person(admin, "<Admin>", "Operates/supports the system")
+
+%% External systems
+    System_Ext(extAuth, "<Identity Provider>", "AuthN/AuthZ (OIDC/SAML)")
+    System_Ext(extPay, "<Payment Provider>", "Charges customers")
+    System_Ext(extMsg, "<Messaging Provider>", "Email/SMS/Push delivery")
+
+%% Your system
+    System(system, "<Your Software System>", "High-level purpose and value")
+
+%% Relationships
+    Rel(user, system, "Uses", "HTTPS")
+    Rel(admin, system, "Administers", "HTTPS")
+
+    Rel(system, extAuth, "Authenticates via", "OIDC")
+    Rel(system, extPay, "Creates charges via", "REST")
+    Rel(system, extMsg, "Sends notifications via", "API")
+
+%% Optional: show trust boundary / ownership boundary
+    Boundary(b0, "<Organization / Boundary Label>") {
+        System(system, "<Your Software System>", "High-level purpose and value")
+    }

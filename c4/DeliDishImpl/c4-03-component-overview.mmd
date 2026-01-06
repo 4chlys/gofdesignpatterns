@@ -1,0 +1,134 @@
+﻿graph TB
+    subgraph External["External Interfaces"]
+        WebApp["Web Browser<br/>(Klanten & Restaurants)"]
+        MobileApp["Mobile App<br/>(Koeriers)"]
+        GoogleAPI["Google Maps API"]
+        IngenicoAPI["Ingenico Payment API"]
+        FacebookAPI["Facebook OAuth API"]
+    end
+    
+    subgraph ApplicationServer["Application Server (Spring Boot)"]
+        subgraph PresentationLayer["<b>PRESENTATION LAYER</b>"]
+            Controller["<b>BestellingController</b><br/>[Component]<br/><br/>HTTP REST endpoints<br/>• GET /beschikbare-leveringen<br/>• POST /accepteer-opdracht<br/>• Request validation<br/>• Response formatting"]
+        end
+        
+        subgraph BusinessLayer["<b>BUSINESS LAYER</b>"]
+            subgraph Services["Services"]
+                BestellingService["<b>BestellingService</b><br/>[Component]<br/><br/>• Bestelling logica<br/>• Opdracht verdeling<br/>• Premium koerier filtering"]
+                PersoonService["<b>PersoonService</b><br/>[Component]<br/><br/>• Klant beheer<br/>• Koerier beheer<br/>• DeliveryPoints"]
+                RestaurantService["<b>RestaurantService</b><br/>[Component]<br/><br/>• Restaurant beheer<br/>• Menu beheer"]
+                RegistratieService["<b>RegistratieService</b><br/>[Component]<br/><br/>• Observer registraties<br/>• Notificatie setup"]
+                NotificationService["<b>NotificationService</b><br/>[Component]<br/><br/>• Notificatie opslag<br/>• Event recording"]
+            end
+            
+            subgraph BusinessPolicies["Business Policies"]
+                PolicyFactory["<b>DeliveryPolicyFactory</b><br/>[Component]<br/><br/>Land-specifieke regels<br/>• Belgium: 20km/u, Premium<br/>• Germany: 30km/u, No Premium"]
+            end
+            
+            subgraph DomainModel["Domain Model (Aggregates)"]
+                Bestelling["<b>Bestelling</b><br/>[Aggregate Root]<br/><br/>Order met events,<br/>lijnen, status"]
+                Restaurant["<b>Restaurant</b><br/>[Aggregate Root]<br/><br/>Met gerechten,<br/>observers, openingsuren"]
+                Koerier["<b>Koerier</b><br/>[Entity]<br/><br/>Met DeliveryPoints,<br/>positie, beschikbaarheid"]
+            end
+        end
+        
+        subgraph PersistenceLayer["<b>PERSISTENCE LAYER</b>"]
+            subgraph Repositories["Repositories (CRUD)"]
+                BestellingRepo["<b>BestellingRepository</b><br/>[Component]<br/><br/>Interface + MemoryImpl<br/>• getMetStatus()<br/>• insert/update/delete"]
+                RestaurantRepo["<b>RestaurantRepository</b><br/>[Component]<br/><br/>Interface + MemoryImpl<br/>• getByNaam()<br/>• getByEmail()"]
+                KoerierRepo["<b>KoerierRepository</b><br/>[Component]<br/><br/>Interface + MemoryImpl<br/>• getBeschikbaar()<br/>• update delivery points"]
+                KlantRepo["<b>KlantRepository</b><br/>[Component]<br/><br/>Interface + MemoryImpl<br/>• getByEmail()"]
+                NotificationRepo["<b>NotificationRepository</b><br/>[Component]<br/><br/>Interface + MemoryImpl<br/>• getByRecipient()"]
+            end
+            
+            DataLader["<b>DataLader</b><br/>[Component]<br/><br/>Test data initialization"]
+        end
+        
+        subgraph InfrastructureLayer["<b>INFRASTRUCTURE</b>"]
+            AfstandsMeter["<b>AfstandsMeterFactory</b><br/>[Component]<br/><br/>Spatial4J library<br/>Distance: 3 min/km"]
+            Clock["<b>Clock</b><br/>[Component]<br/><br/>Time management<br/>for testing"]
+            TopN["<b>TopN&lt;T&gt;</b><br/>[Component]<br/><br/>Priority queue utility<br/>for top N koeriers"]
+        end
+    end
+    
+    subgraph Database["Database"]
+        DB["<b>Database</b><br/>[Database]<br/><br/>In-memory collections<br/>for development"]
+    end
+    
+    %% External to Presentation
+    WebApp -->|"HTTPS/REST"| Controller
+    MobileApp -->|"HTTPS/REST"| Controller
+    
+    %% Presentation to Business
+    Controller -->|"Delegates"| BestellingService
+    Controller -->|"Uses"| PersoonService
+    
+    %% Business Services Dependencies
+    BestellingService -->|"Uses"| PersoonService
+    BestellingService -->|"Uses"| PolicyFactory
+    BestellingService -->|"Uses"| TopN
+    BestellingService -->|"Uses"| AfstandsMeter
+    BestellingService -->|"Works with"| Bestelling
+    BestellingService -->|"Works with"| Koerier
+    
+    RegistratieService -->|"Uses"| NotificationService
+    
+    %% Business to Persistence
+    BestellingService -->|"Persists"| BestellingRepo
+    PersoonService -->|"Persists"| KoerierRepo
+    PersoonService -->|"Persists"| KlantRepo
+    RestaurantService -->|"Persists"| RestaurantRepo
+    NotificationService -->|"Persists"| NotificationRepo
+    
+    %% Persistence to Database
+    BestellingRepo -->|"JDBC"| DB
+    RestaurantRepo -->|"JDBC"| DB
+    KoerierRepo -->|"JDBC"| DB
+    KlantRepo -->|"JDBC"| DB
+    NotificationRepo -->|"JDBC"| DB
+    
+    %% External APIs
+    Controller -->|"HTTPS"| GoogleAPI
+    Controller -->|"HTTPS"| IngenicoAPI
+    Controller -->|"HTTPS"| FacebookAPI
+    
+    DataLader -.->|"Initializes"| BestellingRepo
+    DataLader -.->|"Initializes"| RestaurantRepo
+    
+    style Controller fill:#85bbf0,stroke:#5d82a8,color:#000000,stroke-width:2px
+    style BestellingService fill:#85bbf0,stroke:#5d82a8,color:#000000,stroke-width:2px
+    style PersoonService fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style RestaurantService fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style RegistratieService fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style NotificationService fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style PolicyFactory fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style Bestelling fill:#c9e7f2,stroke:#5d82a8,color:#000000
+    style Restaurant fill:#c9e7f2,stroke:#5d82a8,color:#000000
+    style Koerier fill:#c9e7f2,stroke:#5d82a8,color:#000000
+    style BestellingRepo fill:#85bbf0,stroke:#5d82a8,color:#000000,stroke-width:2px
+    style RestaurantRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style KoerierRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style KlantRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style NotificationRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style DataLader fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style AfstandsMeter fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style Clock fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style TopN fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style DB fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style PresentationLayer fill:#ffe6e6,stroke:#cc0000,stroke-width:2px
+    style BusinessLayer fill:#e6f3ff,stroke:#0066cc,stroke-width:2px
+    style PersistenceLayer fill:#e6ffe6,stroke:#00cc00,stroke-width:2px
+    style InfrastructureLayer fill:#fff9e6,stroke:#cc9900,stroke-width:2px
+    
+    subgraph Legend[" "]
+        L1["Presentation Layer = Controllers"]
+        L2["Business Layer = Services + Domain"]
+        L3["Persistence Layer = Repositories"]
+        L4["Infrastructure = Utilities"]
+    end
+    
+    style Legend fill:#ffffff,stroke:#333,stroke-width:2px
+    style L1 fill:#ffe6e6,stroke:#cc0000,color:#000000
+    style L2 fill:#e6f3ff,stroke:#0066cc,color:#000000
+    style L3 fill:#e6ffe6,stroke:#00cc00,color:#000000
+    style L4 fill:#fff9e6,stroke:#cc9900,color:#000000

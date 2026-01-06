@@ -1,0 +1,69 @@
+﻿graph TB
+    BestellingService["BestellingService"]
+    PersoonService["PersoonService"]
+    RestaurantService["RestaurantService"]
+    NotificationService["NotificationService"]
+    
+    BestellingRepoInterface["<b>BestellingRepository</b><br/>[Interface]<br/><br/>getAll(): Collection<br/>insert(int, Bestelling): Bestelling<br/>get(int): Bestelling<br/>update(int, Bestelling): void<br/>deleteAll(): void<br/>getMetStatus(BestelStatus): Collection"]
+    
+    BestellingRepoImpl["<b>BestellingMemoryRepository</b><br/>[Spring Repository]<br/>[Implements BestellingRepository]<br/><br/>Storage: Map Integer to Bestelling<br/><br/>In-memory HashMap for development<br/>Production: JPA/Hibernate Database"]
+    
+    KoerierRepoInterface["<b>KoerierRepository</b><br/>[Interface]<br/><br/>getAll(): Collection<br/>insert(String, Koerier): Koerier<br/>update(String, Koerier): Koerier<br/>deleteAll(): void<br/>getByEmail(String): Koerier<br/>getBeschikbaar(): Collection<br/><br/>getBeschikbaar filters where available true"]
+    
+    KoerierRepoImpl["<b>KoerierMemoryRepository</b><br/>[Spring Repository]<br/>[Implements KoerierRepository]<br/><br/>Storage: Map String to Koerier<br/>Key: Email address"]
+    
+    KlantRepoInterface["<b>KlantRepository</b><br/>[Interface]<br/><br/>getAll(): Collection<br/>insert(String, Klant): Klant<br/>deleteAll(): void<br/>getByEmail(String): Klant"]
+    
+    KlantRepoImpl["<b>KlantMemoryRepository</b><br/>[Spring Repository]<br/>[Implements KlantRepository]<br/><br/>Storage: Map String to Klant<br/>Key: Email address"]
+    
+    RestaurantRepoInterface["<b>RestaurantRepository</b><br/>[Interface]<br/><br/>getAll(): Collection<br/>insert(String, Restaurant): Restaurant<br/>update(Restaurant): Restaurant<br/>deleteAll(): void<br/>getByEmail(String): Restaurant<br/>getByNaam(String): Restaurant"]
+    
+    RestaurantRepoImpl["<b>RestaurantMemoryRepository</b><br/>[Spring Repository]<br/>[Implements RestaurantRepository]<br/><br/>Storage: Map String to Restaurant<br/>Key: Email address<br/>Includes cascaded gerechten list"]
+    
+    NotificationRepoInterface["<b>NotificationRepository</b><br/>[Interface]<br/><br/>save(Notification): Notification<br/>getByRecipient(String): List<br/>getAll(): List"]
+    
+    NotificationRepoImpl["<b>NotificationMemoryRepository</b><br/>[Spring Repository]<br/>[Implements NotificationRepository]<br/><br/>Storage: Map Long to Notification<br/>Auto-generated ID with AtomicLong"]
+    
+    DataLader["<b>DataLader</b><br/>[Spring Component]<br/><br/>loadTestData(): void<br/><br/>Initialize repositories with test data<br/>3 Restaurants with menus<br/>5 Koeriers at different positions<br/>2 Klanten<br/>4 Bestellingen in various states<br/><br/>Called on application startup"]
+    
+    DB["<b>Database Database</b><br/>[Physical Storage]<br/><br/>Development: In-memory collections<br/>Production: Database with tables"]
+    
+    BestellingService -->|"Calls"| BestellingRepoInterface
+    PersoonService -->|"Calls"| KoerierRepoInterface
+    PersoonService -->|"Calls"| KlantRepoInterface
+    RestaurantService -->|"Calls"| RestaurantRepoInterface
+    NotificationService -->|"Calls"| NotificationRepoInterface
+    
+    BestellingRepoInterface <-.->|"implements"| BestellingRepoImpl
+    KoerierRepoInterface <-.->|"implements"| KoerierRepoImpl
+    KlantRepoInterface <-.->|"implements"| KlantRepoImpl
+    RestaurantRepoInterface <-.->|"implements"| RestaurantRepoImpl
+    NotificationRepoInterface <-.->|"implements"| NotificationRepoImpl
+    
+    BestellingRepoImpl -->|"JDBC/JPA"| DB
+    KoerierRepoImpl -->|"JDBC/JPA"| DB
+    KlantRepoImpl -->|"JDBC/JPA"| DB
+    RestaurantRepoImpl -->|"JDBC/JPA"| DB
+    NotificationRepoImpl -->|"JDBC/JPA"| DB
+    
+    DataLader -.->|"Initializes"| BestellingRepoImpl
+    DataLader -.->|"Initializes"| RestaurantRepoImpl
+    DataLader -.->|"Initializes"| KoerierRepoImpl
+    DataLader -.->|"Initializes"| KlantRepoImpl
+    
+    style BestellingRepoInterface fill:#b3d9ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style BestellingRepoImpl fill:#80c1ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style KoerierRepoInterface fill:#b3d9ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style KoerierRepoImpl fill:#80c1ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style KlantRepoInterface fill:#b3d9ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style KlantRepoImpl fill:#80c1ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style RestaurantRepoInterface fill:#b3d9ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style RestaurantRepoImpl fill:#80c1ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style NotificationRepoInterface fill:#b3d9ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style NotificationRepoImpl fill:#80c1ff,stroke:#0066cc,color:#000000,stroke-width:2px
+    style DataLader fill:#ffdb4d,stroke:#cc9900,color:#000000,stroke-width:2px
+    style DB fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:3px
+    style BestellingService fill:#66b3ff,stroke:#0066cc,color:#000000
+    style PersoonService fill:#66b3ff,stroke:#0066cc,color:#000000
+    style RestaurantService fill:#66b3ff,stroke:#0066cc,color:#000000
+    style NotificationService fill:#66b3ff,stroke:#0066cc,color:#000000

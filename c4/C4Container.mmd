@@ -1,0 +1,46 @@
+C4Container
+    title Container diagram for <Your System>
+
+    Person(user, "<Primary User>", "Uses the product")
+    Person(admin, "<Admin>", "Manages configuration and operations")
+
+    System_Boundary(sb, "<Your Software System>") {
+
+        Container(web, "<Web App>", "React/Vue/Angular", "Delivers the UI")
+        Container(mobile, "<Mobile App>", "iOS/Android", "Optional mobile client")
+
+        Container(api, "<API Application>", "Java/Spring, .NET, Node, etc.", "Implements business capabilities")
+        Container(worker, "<Background Worker>", "Java/.NET/Node", "Async jobs, scheduled tasks")
+
+        ContainerDb(db, "<Primary Database>", "PostgreSQL/MySQL", "Stores core business data")
+        ContainerDb(cache, "<Cache>", "Redis", "Caching, sessions, rate limits")
+
+        Container(queue, "<Message Broker>", "Kafka/RabbitMQ/SQS", "Async messaging")
+
+        Container(files, "<Object Storage>", "S3/Azure Blob", "Documents, media, exports")
+    }
+
+    System_Ext(extAuth, "<Identity Provider>", "OIDC/SAML")
+    System_Ext(extObs, "<Observability Stack>", "Logs/Metrics/Tracing")
+    System_Ext(extPay, "<Payment Provider>", "Payments")
+
+%% User interactions
+    Rel(user, web, "Uses", "HTTPS")
+    Rel(user, mobile, "Uses", "HTTPS")
+    Rel(admin, web, "Admin tasks", "HTTPS")
+
+%% Container interactions
+    Rel(web, api, "Calls", "JSON/HTTPS")
+    Rel(mobile, api, "Calls", "JSON/HTTPS")
+
+    Rel(api, db, "Reads/Writes", "JDBC")
+    Rel(api, cache, "Reads/Writes", "TCP")
+    Rel(api, queue, "Publishes events", "AMQP/HTTP")
+    Rel(worker, queue, "Consumes events", "AMQP/HTTP")
+    Rel(worker, db, "Reads/Writes", "JDBC")
+    Rel(api, files, "Stores/reads files", "HTTPS")
+
+%% External integrations
+    Rel(api, extAuth, "Validates tokens / login", "OIDC")
+    Rel(api, extPay, "Creates charges", "REST")
+    Rel(api, extObs, "Emits logs/metrics/traces", "OTLP/HTTP")

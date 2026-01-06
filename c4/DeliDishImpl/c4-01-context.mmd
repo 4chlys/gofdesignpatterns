@@ -1,0 +1,39 @@
+﻿graph TB
+Customer["👤 Klant<br/><b>[Person]</b><br/><br/>Bestelt maaltijden via<br/>web browser of mobiele app"]
+    Restaurant["👤 Restauranthouder<br/><b>[Person]</b><br/><br/>Beheert menu,<br/>accepteert bestellingen,<br/>update bestelstatus"]
+    Courier["👤 Koerier<br/><b>[Person]</b><br/><br/>Accepteert opdrachten,<br/>haalt bestellingen op,<br/>levert bij klanten"]
+    
+    DeliDish["<b>DeliDish Platform</b><br/>[Software System]<br/><br/>Food delivery platform dat<br/>restaurants, klanten en koeriers<br/>verbindt voor maaltijdbezorging"]
+    
+    Ingenico["<b>Ingenico</b><br/>[External System]<br/><br/>Betalingsverwerking<br/>voor klanten"]
+    Google["<b>Google Maps API</b><br/>[External System]<br/><br/>OAuth authenticatie en<br/>Geocoding (adres → coördinaten)"]
+    Facebook["<b>Facebook</b><br/>[External System]<br/><br/>OAuth authenticatie"]
+    
+    Customer -->|"Bekijkt restaurants,<br/>plaatst bestellingen,<br/>volgt bezorgstatus"| DeliDish
+    Restaurant -->|"Beheert menu,<br/>accepteert bestellingen,<br/>markeert gereed"| DeliDish
+    Courier -->|"Vraagt opdrachten op,<br/>accepteert bezorging,<br/>update leverstatus"| DeliDish
+    
+    DeliDish -->|"Verwerkt betalingen<br/>(70% naar restaurant)"| Ingenico
+    DeliDish -->|"Authenticatie,<br/>Geocoding van adressen"| Google
+    DeliDish -->|"Authenticatie"| Facebook
+    
+    style DeliDish fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:3px
+    style Customer fill:#08427b,stroke:#052e56,color:#ffffff
+    style Restaurant fill:#08427b,stroke:#052e56,color:#ffffff
+    style Courier fill:#08427b,stroke:#052e56,color:#ffffff
+    style Ingenico fill:#999999,stroke:#6b6b6b,color:#ffffff
+    style Google fill:#999999,stroke:#6b6b6b,color:#ffffff
+    style Facebook fill:#999999,stroke:#6b6b6b,color:#ffffff
+    
+    classDef legend fill:#f9f9f9,stroke:#333,stroke-width:1px
+    
+    subgraph Legend[" "]
+        L1["System = DeliDish Platform"]
+        L2["Person = Users"]
+        L3["External = Third-party systems"]
+    end
+    
+    style Legend fill:#ffffff,stroke:#333,stroke-width:2px
+    style L1 fill:#1168bd,stroke:#0b4884,color:#ffffff
+    style L2 fill:#08427b,stroke:#052e56,color:#ffffff
+    style L3 fill:#999999,stroke:#6b6b6b,color:#ffffff

@@ -1,0 +1,153 @@
+﻿graph TB
+    Main["DelidishApplication<br/>main()"]
+    
+    Controller["BestellingController<br/>[Presentation]"]
+    
+    BestellingService["BestellingService<br/>[Business]"]
+    PersoonService["PersoonService<br/>[Business]"]
+    RestaurantService["RestaurantService<br/>[Business]"]
+    NotificationService["NotificationService<br/>[Business]"]
+    RegistratieService["RegistratieService<br/>[Business]"]
+    
+    PolicyFactory["DeliveryPolicyFactory<br/>[Policy]"]
+    BelgiumPolicy["BelgiumDeliveryPolicy<br/>[Policy]"]
+    GermanyPolicy["GermanyDeliveryPolicy<br/>[Policy]"]
+    
+    ObserverInterface["BestellingObserver<br/>[Interface]"]
+    PartijObserver["PartijNotificationObserver<br/>[Observer]"]
+    NotificationEntity["Notification<br/>[Entity]"]
+    
+    Bestelling["Bestelling<br/>[Aggregate Root]"]
+    BestellingLijn["BestellingLijn"]
+    BestelEvent["BestelEvent"]
+    BestelStatus["BestelStatus<br/>[Enum]"]
+    
+    Restaurant["Restaurant<br/>[Aggregate Root]"]
+    Gerecht["Gerecht"]
+    SamengesteldGerecht["SamengesteldGerecht"]
+    Allergeen["Allergeen<br/>[Enum]"]
+    
+    Partij["Partij<br/>[Abstract]"]
+    Persoon["Persoon"]
+    Klant["Klant"]
+    Koerier["Koerier"]
+    DeliveryPointEvent["DeliveryPointEvent"]
+    
+    ContactInfo["ContactInfo"]
+    Adres["Adres"]
+    Position["Position"]
+    Gemeente["Gemeente"]
+    Land["Land<br/>[Enum]"]
+    Rekeningnummer["Rekeningnummer"]
+    
+    Betaling["Betaling"]
+    Transactie["Transactie"]
+    
+    BestellingRepo["BestellingRepository<br/>[+ MemoryImpl]"]
+    KoerierRepo["KoerierRepository<br/>[+ MemoryImpl]"]
+    KlantRepo["KlantRepository<br/>[+ MemoryImpl]"]
+    RestaurantRepo["RestaurantRepository<br/>[+ MemoryImpl]"]
+    NotificationRepo["NotificationRepository<br/>[+ MemoryImpl]"]
+    DataLader["DataLader"]
+    
+    AfstandsMeterFactory["AfstandsMeterFactory"]
+    AfstandsMeter["AfstandsMeter<br/>[Interface]"]
+    Spatial4J["Spatial4JAfstandsMeter"]
+    
+    TopN["TopN"]
+    Clock["Clock"]
+    
+    DB["In-memory HashMap<br/>Database"]
+    
+    Main --> Controller
+    Main --> DataLader
+    
+    Controller --> BestellingService
+    Controller --> PersoonService
+    
+    BestellingService --> PersoonService
+    BestellingService --> PolicyFactory
+    BestellingService --> AfstandsMeterFactory
+    BestellingService --> TopN
+    BestellingService --> Clock
+    
+    RegistratieService --> NotificationService
+    RegistratieService --> PartijObserver
+    
+    BestellingService --> BestellingRepo
+    PersoonService --> KoerierRepo
+    PersoonService --> KlantRepo
+    RestaurantService --> RestaurantRepo
+    NotificationService --> NotificationRepo
+    
+    PolicyFactory --> BelgiumPolicy
+    PolicyFactory --> GermanyPolicy
+    
+    PartijObserver -.->|"implements"| ObserverInterface
+    PartijObserver --> NotificationService
+    Restaurant --> ObserverInterface
+    
+    Bestelling --> BestellingLijn
+    Bestelling --> BestelEvent
+    Bestelling --> BestelStatus
+    Bestelling --> Klant
+    Bestelling --> Koerier
+    Bestelling --> Restaurant
+    Bestelling --> Adres
+    
+    Restaurant --> Gerecht
+    SamengesteldGerecht -.->|"extends"| Gerecht
+    Gerecht --> Allergeen
+    
+    Partij --> Persoon
+    Persoon --> Klant
+    Persoon --> Koerier
+    Restaurant -.->|"extends"| Partij
+    Koerier --> DeliveryPointEvent
+    Koerier --> Position
+    
+    ContactInfo --> Adres
+    Adres --> Position
+    Adres --> Gemeente
+    Gemeente --> Land
+    Partij --> ContactInfo
+    Partij --> Rekeningnummer
+    
+    Transactie -.->|"extends"| Betaling
+    
+    AfstandsMeterFactory --> AfstandsMeter
+    Spatial4J -.->|"implements"| AfstandsMeter
+    
+    DataLader --> BestellingRepo
+    DataLader --> RestaurantRepo
+    DataLader --> KoerierRepo
+    DataLader --> KlantRepo
+    
+    BestellingRepo --> DB
+    RestaurantRepo --> DB
+    KoerierRepo --> DB
+    KlantRepo --> DB
+    NotificationRepo --> DB
+    
+    style Controller fill:#ff9999,stroke:#cc0000,color:#000000
+    style BestellingService fill:#66b3ff,stroke:#0066cc,color:#000000
+    style PersoonService fill:#66b3ff,stroke:#0066cc,color:#000000
+    style RestaurantService fill:#66b3ff,stroke:#0066cc,color:#000000
+    style NotificationService fill:#66b3ff,stroke:#0066cc,color:#000000
+    style RegistratieService fill:#66b3ff,stroke:#0066cc,color:#000000
+    style PolicyFactory fill:#ffdb4d,stroke:#cc9900,color:#000000
+    style BelgiumPolicy fill:#fff4cc,stroke:#cc9900,color:#000000
+    style GermanyPolicy fill:#fff4cc,stroke:#cc9900,color:#000000
+    style Bestelling fill:#c9e7f2,stroke:#5d82a8,color:#000000
+    style Restaurant fill:#c9e7f2,stroke:#5d82a8,color:#000000
+    style Koerier fill:#c9e7f2,stroke:#5d82a8,color:#000000
+    style BestellingRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style KoerierRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style KlantRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style RestaurantRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style NotificationRepo fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style DataLader fill:#85bbf0,stroke:#5d82a8,color:#000000
+    style AfstandsMeterFactory fill:#ffdb4d,stroke:#cc9900,color:#000000
+    style TopN fill:#ffdb4d,stroke:#cc9900,color:#000000
+    style Clock fill:#ffdb4d,stroke:#cc9900,color:#000000
+    style DB fill:#1168bd,stroke:#0b4884,color:#ffffff

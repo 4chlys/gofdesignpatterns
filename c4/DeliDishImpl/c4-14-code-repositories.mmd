@@ -1,0 +1,155 @@
+﻿classDiagram
+    %% Repository Interfaces
+    class BestellingRepository {
+        <<interface>>
+        +getAll() Collection~Bestelling~
+        +insert(int, Bestelling) Bestelling
+        +get(int) Bestelling
+        +update(int, Bestelling) void
+        +deleteAll() void
+        +getMetStatus(BestelStatus) Collection~Bestelling~
+    }
+    
+    class KoerierRepository {
+        <<interface>>
+        +insert(String, Koerier) Koerier
+        +update(String, Koerier) Koerier
+        +getAll() Collection~Koerier~
+        +getBeschikbaar() Collection~Koerier~
+        +deleteAll() void
+        +getByEmail(String) Koerier
+    }
+    
+    class KlantRepository {
+        <<interface>>
+        +insert(String, Klant) Klant
+        +getAll() Collection~Klant~
+        +deleteAll() void
+        +getByEmail(String) Klant
+    }
+    
+    class RestaurantRepository {
+        <<interface>>
+        +insert(String, Restaurant) Restaurant
+        +getAll() Collection~Restaurant~
+        +deleteAll() void
+        +getByEmail(String) Restaurant
+        +getByNaam(String) Restaurant
+        +update(Restaurant) Restaurant
+    }
+    
+    class NotificationRepository {
+        <<interface>>
+        +save(Notification) Notification
+        +getByRecipient(String) List~Notification~
+        +getAll() List~Notification~
+    }
+    
+    %% Memory Implementations
+    class BestellingMemoryRepository {
+        <<Spring @Repository>>
+        -bestellingen : Map~Integer, Bestelling~
+        +BestellingMemoryRepository()
+        +getAll() Collection~Bestelling~
+        +insert(int, Bestelling) Bestelling
+        +get(int) Bestelling
+        +update(int, Bestelling) void
+        +deleteAll() void
+        +getMetStatus(BestelStatus) Collection~Bestelling~
+    }
+    
+    class KoerierMemoryRepository {
+        <<Spring @Repository>>
+        -koeriers : Map~String, Koerier~
+        +KoerierMemoryRepository()
+        +insert(String, Koerier) Koerier
+        +update(String, Koerier) Koerier
+        +getAll() Collection~Koerier~
+        +getBeschikbaar() Collection~Koerier~
+        +deleteAll() void
+        +getByEmail(String) Koerier
+    }
+    
+    class KlantMemoryRepository {
+        <<Spring @Repository>>
+        -klanten : Map~String, Klant~
+        +KlantMemoryRepository()
+        +insert(String, Klant) Klant
+        +getAll() Collection~Klant~
+        +deleteAll() void
+        +getByEmail(String) Klant
+    }
+    
+    class RestaurantMemoryRepository {
+        <<Spring @Repository>>
+        -restaurants : Map~String, Restaurant~
+        +RestaurantMemoryRepository()
+        +insert(String, Restaurant) Restaurant
+        +getAll() Collection~Restaurant~
+        +deleteAll() void
+        +getByEmail(String) Restaurant
+        +getByNaam(String) Restaurant
+        +update(Restaurant) Restaurant
+    }
+    
+    class NotificationMemoryRepository {
+        <<Spring @Repository>>
+        -notifications : Map~Long, Notification~
+        -idGenerator : AtomicLong
+        +NotificationMemoryRepository()
+        +save(Notification) Notification
+        +getByRecipient(String) List~Notification~
+        +getAll() List~Notification~
+    }
+    
+    %% Data Loader
+    class DataLader {
+        <<Spring @Component>>
+        -bestellingRepo : BestellingRepository
+        -restaurantRepo : RestaurantRepository
+        -koerierRepo : KoerierRepository
+        -klantRepo : KlantRepository
+        -clock : Clock
+        +DataLader(BestellingRepository, RestaurantRepository, KoerierRepository, KlantRepository, Clock)
+        +loadTestData() void
+        -createRestaurants() void
+        -createKoeriers() void
+        -createKlanten() void
+        -createBestellingen() void
+    }
+    
+    %% Implementations implement Interfaces
+    BestellingMemoryRepository ..|> BestellingRepository : implements
+    KoerierMemoryRepository ..|> KoerierRepository : implements
+    KlantMemoryRepository ..|> KlantRepository : implements
+    RestaurantMemoryRepository ..|> RestaurantRepository : implements
+    NotificationMemoryRepository ..|> NotificationRepository : implements
+    
+    %% DataLader uses repositories
+    DataLader --> BestellingRepository : uses
+    DataLader --> RestaurantRepository : uses
+    DataLader --> KoerierRepository : uses
+    DataLader --> KlantRepository : uses
+    DataLader ..> Clock : uses
+    
+    %% Services use repository interfaces
+    BestellingService --> BestellingRepository : injects
+    PersoonService --> KoerierRepository : injects
+    PersoonService --> KlantRepository : injects
+    RestaurantService --> RestaurantRepository : injects
+    NotificationService --> NotificationRepository : injects
+    
+    %% Repositories work with domain objects
+    BestellingRepository ..> Bestelling : stores
+    KoerierRepository ..> Koerier : stores
+    KlantRepository ..> Klant : stores
+    RestaurantRepository ..> Restaurant : stores
+    NotificationRepository ..> Notification : stores
+    
+    note for BestellingRepository "Repository Pattern:<br/><br/>Interface defines contract:<br/>- Technology agnostic<br/>- Used by services<br/>- Can swap implementations<br/><br/>getMetStatus():<br/>- Query method<br/>- Filters by BestelStatus<br/>- Returns bestellingen with status<br/>  GEPLAATST, AANVAARD_RESTAURANT<br/><br/>Key: bestellingID (int)"
+    
+    note for KoerierMemoryRepository "Memory Implementation:<br/><br/>Storage:<br/>private final Map<String, Koerier> koeriers<br/>  = new ConcurrentHashMap<>();<br/><br/>getBeschikbaar():<br/>return koeriers.values().stream()<br/>  .filter(k -> k.isAvailable())<br/>  .collect(Collectors.toList());<br/><br/>Thread-safe:<br/>- ConcurrentHashMap for concurrent access<br/>- No synchronization needed<br/><br/>Production:<br/>- Replace with JPA implementation<br/>- @Entity on Koerier<br/>- Extends JpaRepository"
+    
+    note for NotificationMemoryRepository "Auto-increment ID:<br/><br/>private final AtomicLong idGenerator<br/>  = new AtomicLong(1);<br/><br/>save() implementation:<br/>if (notification.getId() == 0) {<br/>  notification.setId(<br/>    idGenerator.getAndIncrement()<br/>  );<br/>}<br/>notifications.put(<br/>  notification.getId(),<br/>  notification<br/>);<br/>return notification;<br/><br/>getByRecipient():<br/>Filters by recipientEmail<br/>Sorts by timestamp DESC<br/>Returns List<Notification>"
+    
+    note for DataLader "Test Data Initialization:<br/><br/>Executed on startup:<br/>- @PostConstruct annotation<br/>- Or CommandLineRunner<br/><br/>Creates:<br/><br/>3 Restaurants:<br/>- 'Pizza Palace' (Belgium, Antwerp)<br/>- 'Burger Bar' (Belgium, Brussels)<br/>- 'Schnitzel House' (Germany, Berlin)<br/>Each with 5-10 gerechten<br/><br/>5 Koeriers:<br/>- At different positions<br/>- Different DeliveryPoints (0-50)<br/>- Mixed availability<br/><br/>2 Klanten:<br/>- 'Jan Janssen'<br/>- 'Marie Dubois'<br/><br/>4 Bestellingen:<br/>- Status: GEPLAATST (2x)<br/>- Status: AANVAARD_RESTAURANT (1x)<br/>- Status: AANVAARD_KOERIER (1x)"

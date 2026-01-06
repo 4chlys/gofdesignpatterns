@@ -1,0 +1,122 @@
+﻿classDiagram
+    class Bestelling {
+        <<Aggregate Root>>
+        -bestellingID : int
+        -events : List~BestelEvent~
+        -bestellingLijnen : List~BestellingLijn~
+        -leverAdres : Adres
+        -klant : Klant
+        -deliverer : Koerier
+        -restaurant : Restaurant
+        -planBereidingKlaar : LocalDateTime
+        -opmerking : String
+        -bestelTijd : LocalDateTime
+        +Bestelling(int, Restaurant, Klant, Adres, List, LocalDateTime, String)
+        +setRestaurant(Restaurant) void
+        +getRestaurant() Restaurant
+        +setEvents(List) void
+        +getDeliverer() Koerier
+        +setDeliverer(Koerier) void
+        +getStatus() BestelStatus
+        +getLaatsteEventTime() LocalDateTime
+        +getLeverAdress() Adres
+        +getRestaurantAdress() Adres
+        +getBestellingLijnen() List~BestellingLijn~
+        +getBestelLijnen() List~BestellingLijn~
+        +addEvent(BestelEvent) void
+        +getBestellingID() int
+        +getPosition() Position
+        +hasState(BestelStatus) boolean
+        +getPlanBereidingKlaar() LocalDateTime
+        +setClock(Clock) void
+        +plaats(String) void
+        +restaurantAccepteert(LocalDateTime, String) void
+        +restaurantAccepteert(String) void
+        +getGebeuren() List~BestelEvent~
+        +getResto() Restaurant
+        +getKlant() Klant
+        +getEvents() List~BestelEvent~
+    }
+    
+    class BestellingLijn {
+        <<Entity>>
+        -gerecht : Gerecht
+        -quantity : int
+        -remark : String
+        +BestellingLijn(Gerecht, int, String)
+        +BestellingLijn(Gerecht, int)
+        +getGerecht() Gerecht
+        +getDish() Gerecht
+        +getQuantity() int
+        +setQuantity(int) void
+        +getRemark() String
+        +setRemark(String) void
+        +getTotaalPrijs() double
+        +getBereidingstijd() int
+        +isBestelbaar() boolean
+    }
+    
+    class BestelEvent {
+        <<Event>>
+        -timestamp : LocalDateTime
+        -status : BestelStatus
+        -remark : String
+        +BestelEvent(BestelStatus)
+        +BestelEvent(BestelStatus, String)
+        +BestelEvent(BestelStatus, String, Clock)
+        +getTimestamp() LocalDateTime
+        +getStatus() BestelStatus
+        +getRemark() String
+    }
+    
+    class BestelStatus {
+        <<enumeration>>
+        AANGEMAAKT
+        GEPLAATST
+        AANVAARD_RESTAURANT
+        AANVAARD_KOERIER
+        GEANNULEERD
+        BEZORGD
+    }
+    
+    class BestellingBuilder {
+        <<Builder Pattern>>
+        -bestellingID : int
+        -restaurant : Restaurant
+        -klant : Klant
+        -leverAdres : Adres
+        -bestellingLijnen : List~BestellingLijn~
+        -bestelTijd : LocalDateTime
+        -clock : Clock
+        +setOrderID(int) BestellingBuilder
+        +setResto(Restaurant) BestellingBuilder
+        +setKlant(Klant) BestellingBuilder
+        +setLeverAdres(Adres) BestellingBuilder
+        +addBestellingLijn(BestellingLijn) BestellingBuilder
+        +setBestelTijd(LocalDateTime) BestellingBuilder
+        +setClock(Clock) BestellingBuilder
+        +createBestelling() Bestelling
+    }
+    
+    %% Relationships
+    Bestelling "1" *-- "*" BestellingLijn : contains >
+    Bestelling "1" *-- "*" BestelEvent : has events >
+    Bestelling --> "1" BestelStatus : has status
+    BestellingLijn --> "1" Gerecht : references >
+    BestelEvent --> "1" BestelStatus : has status
+    BestellingBuilder ..> Bestelling : creates >
+    
+    %% External references (shown as notes)
+    Bestelling --> Klant : ordered by
+    Bestelling --> Koerier : delivered by
+    Bestelling --> Restaurant : from
+    Bestelling --> Adres : delivered to
+    BestelEvent ..> Clock : uses for timestamp
+    
+    note for Bestelling "Aggregate Root:<br/>- Ensures consistency of bestellingLijnen<br/>- Controls all access to events<br/>- Calculates total bereidingstijd<br/>- Manages order lifecycle<br/><br/>Invariants:<br/>- Must have at least 1 bestellingLijn<br/>- Status transitions must be valid<br/>- Cannot change after GEANNULEERD"
+    
+    note for BestellingLijn "Entity within Bestelling aggregate:<br/>- Cannot exist without Bestelling<br/>- Quantity must be > 0<br/>- Calculates line total: quantity * gerecht.prijs"
+    
+    note for BestelEvent "Event sourcing pattern:<br/>- Immutable once created<br/>- Timestamp set at creation<br/>- Full history maintained in events list"
+    
+    note for BestellingBuilder "Builder pattern for complex construction:<br/>- Fluent API (method chaining)<br/>- Validates all required fields<br/>- Sets default values<br/>- Used by tests and DataLader"

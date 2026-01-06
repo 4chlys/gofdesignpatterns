@@ -1,0 +1,168 @@
+﻿classDiagram
+    %% Services
+    class BestellingService {
+        <<Spring @Service>>
+        -persoonService : PersoonService
+        -bestellingRepository : BestellingRepository
+        -clock : Clock
+        -policyFactory : DeliveryPolicyFactory
+        +BestellingService(PersoonService, BestellingRepository, Clock, DeliveryPolicyFactory)
+        +getBeschikbareLeveringen(String, Position) List~Bestelling~
+        +accepteerOpdracht(String, int) String
+        +addOrder(Bestelling) void
+        +getOrderById(int) Bestelling
+        +getOrdersByStatus(BestelStatus) Collection~Bestelling~
+        -isToegelatenVolgensPremium(Bestelling, Koerier) boolean
+        -kanAfhalenBinnenBereidingstijd(Koerier, Bestelling) boolean
+    }
+    
+    class PersoonService {
+        <<Spring @Service>>
+        -klantRepo : KlantRepository
+        -koerierRepo : KoerierRepository
+        +PersoonService(KlantRepository, KoerierRepository)
+        +getKlant(String) Klant
+        +getKoerier(String) Koerier
+        +getAllKoeriers() Collection~Koerier~
+        +updateKoerier(Koerier) void
+        +recordDeliveryPoint(Koerier, int, String) void
+        +addKlant(Klant) Klant
+        +deleteAllKoeriers() void
+    }
+    
+    class RestaurantService {
+        <<Spring @Service>>
+        -restaurantRepo : RestaurantRepository
+        +RestaurantService(RestaurantRepository)
+        +getRestaurant(String) Restaurant
+        +addRestaurant(Restaurant) Restaurant
+        +getRestaurants() Collection~Restaurant~
+        +deleteAllRestaurants() void
+        +updateRestaurant(Restaurant) Restaurant
+    }
+    
+    class NotificationService {
+        <<Spring @Service>>
+        -repository : NotificationRepository
+        -clock : Clock
+        +NotificationService(NotificationRepository, Clock)
+        +recordNotification(Partij, Bestelling, BestelEvent) Notification
+        +getNotificationsFor(String) List~Notification~
+        +getAll() List~Notification~
+    }
+    
+    class RegistratieService {
+        <<Spring @Service>>
+        -koerierRepo : KoerierRepository
+        -restoRepo : RestaurantRepository
+        -notificationService : NotificationService
+        +RegistratieService(KoerierRepository, RestaurantRepository, NotificationService)
+        +registreerKoerierBijRestaurant(String, String) void
+        +registreerPartijBijRestaurant(Partij, String) void
+    }
+    
+    %% Policy System
+    class DeliveryPolicyFactory {
+        <<Spring @Component>>
+        -policies : Map~Land, DeliveryPolicy~
+        +DeliveryPolicyFactory(List~DeliveryPolicy~)
+        +getPolicyFor(Land) DeliveryPolicy
+        +registerPolicy(DeliveryPolicy) void
+    }
+    
+    class DeliveryPolicy {
+        <<interface>>
+        +getAverageSpeedKmPerHour() double
+        +getPriorityListSize() int
+        +isPremiumRestricted() boolean
+        +getLand() Land
+    }
+    
+    class BelgiumDeliveryPolicy {
+        <<Spring @Component>>
+        +getAverageSpeedKmPerHour() double
+        +getPriorityListSize() int
+        +isPremiumRestricted() boolean
+        +getLand() Land
+    }
+    
+    class GermanyDeliveryPolicy {
+        <<Spring @Component>>
+        +getAverageSpeedKmPerHour() double
+        +getPriorityListSize() int
+        +isPremiumRestricted() boolean
+        +getLand() Land
+    }
+    
+    %% Notification System
+    class BestellingObserver {
+        <<interface>>
+        +onBestellingEvent(Bestelling, BestelEvent) void
+    }
+    
+    class PartijNotificationObserver {
+        -partij : Partij
+        -notificationService : NotificationService
+        +PartijNotificationObserver(Partij, NotificationService)
+        +onBestellingEvent(Bestelling, BestelEvent) void
+    }
+    
+    class Notification {
+        <<Entity>>
+        -id : long
+        -recipientEmail : String
+        -bestellingId : long
+        -status : BestelStatus
+        -timestamp : Instant
+        +Notification(String, long, BestelStatus, Instant)
+        +getId() long
+        +setId(long) void
+        +getRecipientEmail() String
+        +getBestellingId() long
+        +getStatus() BestelStatus
+        +getTimestamp() Instant
+    }
+    
+    %% Service Dependencies
+    BestellingService --> PersoonService : uses
+    BestellingService --> BestellingRepository : uses
+    BestellingService --> DeliveryPolicyFactory : uses
+    BestellingService ..> Clock : uses
+    
+    PersoonService --> KlantRepository : uses
+    PersoonService --> KoerierRepository : uses
+    
+    RestaurantService --> RestaurantRepository : uses
+    
+    NotificationService --> NotificationRepository : uses
+    NotificationService ..> Clock : uses
+    
+    RegistratieService --> KoerierRepository : uses
+    RegistratieService --> RestaurantRepository : uses
+    RegistratieService --> NotificationService : uses
+    RegistratieService ..> PartijNotificationObserver : creates
+    
+    %% Policy System
+    DeliveryPolicyFactory --> DeliveryPolicy : manages
+    BelgiumDeliveryPolicy ..|> DeliveryPolicy : implements
+    GermanyDeliveryPolicy ..|> DeliveryPolicy : implements
+    
+    %% Observer Pattern
+    PartijNotificationObserver ..|> BestellingObserver : implements
+    PartijNotificationObserver --> NotificationService : uses
+    PartijNotificationObserver --> Partij : observes for
+    NotificationService ..> Notification : creates
+    
+    %% External references
+    BestellingService ..> Bestelling : works with
+    BestellingService ..> Koerier : works with
+    PersoonService ..> Koerier : works with
+    PersoonService ..> Klant : works with
+    RestaurantService ..> Restaurant : works with
+    Restaurant o-- BestellingObserver : notifies
+    
+    note for BestellingService "Core Service:<br/><br/>getBeschikbareLeveringen():<br/>1. Get beschikbare koeriers<br/>2. Get policy for restaurant land<br/>3. Filter by distance (can arrive before ready)<br/>4. If premium restricted AND < 5 min:<br/>   - Use TopN to get best 7 by points<br/>5. Return filtered bestellingen<br/><br/>accepteerOpdracht():<br/>1. Get koerier by email<br/>2. Get bestelling by ID<br/>3. Set deliverer<br/>4. Add event AANVAARD_KOERIER<br/>5. Award +5 delivery points<br/>6. Update in repository<br/>7. Return success message"
+    
+    note for RegistratieService "Observer Pattern Setup:<br/><br/>registreerKoerierBijRestaurant():<br/>1. Get Koerier from repo<br/>2. Get Restaurant from repo<br/>3. Create PartijNotificationObserver(koerier, notificationService)<br/>4. restaurant.registreerObserver(observer)<br/><br/>When restaurant accepts order:<br/>- notifyObservers() called<br/>- Each observer.onBestellingEvent()<br/>- Creates Notification entity<br/>- Saves via NotificationService<br/><br/>Use case:<br/>Koeriers want to know where orders<br/>are being accepted to position themselves"
+    
+    note for DeliveryPolicyFactory "Strategy Pattern + Factory:<br/><br/>Injection:<br/>- Spring auto-injects all @Component<br/>  implementations of DeliveryPolicy<br/>- Constructor receives List<DeliveryPolicy><br/>- Builds Map<Land, DeliveryPolicy><br/><br/>Usage:<br/>- BestellingService calls getPolicyFor(land)<br/>- Land from restaurant.gemeente.land<br/>- Returns appropriate policy<br/>- No if/switch statements in service!<br/><br/>Extensibility:<br/>- Add new country: create new XxxDeliveryPolicy @Component<br/>- Automatically registered<br/>- No changes to BestellingService"

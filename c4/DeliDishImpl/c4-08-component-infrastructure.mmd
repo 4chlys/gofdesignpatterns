@@ -1,0 +1,48 @@
+﻿graph TB
+    BestellingService["<b>BestellingService</b><br/>[Service]<br/><br/>Needs: Distance calculation,<br/>Time management,<br/>Top N koeriers"]
+    Koerier["<b>Koerier</b><br/>[Entity]<br/><br/>Needs: Time for events,<br/>Distance to restaurant"]
+    
+    AfstandsMeterFactory["<b>AfstandsMeterFactory</b><br/>[Spring Component]<br/><br/>getAfstandsMeter(): AfstandsMeter<br/><br/>Creates and returns singleton<br/>Spatial4JAfstandsMeter instance"]
+    
+    AfstandsMeterInterface["<b>AfstandsMeter</b><br/>[Interface]<br/><br/>getAfstand(Position, Position): double<br/><br/>Returns: Distance in kilometers"]
+    
+    Spatial4JImpl["<b>Spatial4JAfstandsMeter</b><br/>[Implements AfstandsMeter]<br/><br/>Library: Spatial4J<br/>Uses: Haversine formula<br/><br/>1. Create SpatialContext<br/>2. Convert lat/long to Point<br/>3. Calculate great circle distance<br/><br/>Conversion: distance km to time min<br/>Formula: distance * 3 min/km<br/>Example: 5 km = 15 minutes"]
+    
+    Clock["<b>Clock</b><br/>[Spring Component]<br/>[Java 8 Time API]<br/><br/>Default: System clock<br/>Test: Fixed/controllable clock<br/><br/>Usage:<br/>- BestelEvent timestamps<br/>- DeliveryPointEvent timestamps<br/>- Calculate delivery windows<br/>- Check if order within time<br/><br/>Methods:<br/>instant(): Instant<br/>millis(): long<br/>getZone(): ZoneId<br/><br/>Why injectable:<br/>Enables time-based testing<br/>without waiting for real time"]
+    
+    TopN["<b>TopN of T</b><br/>[Generic Utility Class]<br/><br/>Attributes:<br/>n: int (size limit)<br/>comparator: Comparator of T<br/>items: List of T<br/><br/>Constructor:<br/>TopN(int n, Comparator of T)<br/><br/>Methods:<br/>add(T element): void<br/>getTopElements(): List of T<br/>size(): int<br/><br/>Implementation:<br/>Maintains sorted list of top N<br/>elements based on comparator<br/><br/>Use Case:<br/>Get top 7 koeriers by DeliveryPoints<br/>for premium period Belgium policy"]
+    
+    Position["<b>Position</b><br/>[Value Object]<br/><br/>latitude: double<br/>longitude: double<br/><br/>Used by:<br/>Adres, Koerier laatstePositie"]
+    
+    BestelEvent["<b>BestelEvent</b><br/>[Event]<br/><br/>timestamp: LocalDateTime<br/>status: BestelStatus<br/>remark: String<br/><br/>Constructor with Clock:<br/>BestelEvent(status, remark, Clock)"]
+    
+    DeliveryPointEvent["<b>DeliveryPointEvent</b><br/>[Event]<br/><br/>points: int<br/>time: LocalDateTime<br/>type: DeliveryPointEventType<br/><br/>Constructor with Clock:<br/>DeliveryPointEvent(points, type, Clock)"]
+    
+    Spatial4J["<b>Spatial4J Library</b><br/>[Maven Dependency]<br/><br/>org.locationtech.spatial4j<br/><br/>Provides:<br/>- SpatialContext<br/>- Point (lat/long)<br/>- DistanceCalculator<br/>- Haversine formula<br/><br/>Why used:<br/>Accurate geographic distance<br/>calculation on Earth surface"]
+    
+    BestellingService -->|"1. Get factory"| AfstandsMeterFactory
+    AfstandsMeterFactory -->|"2. Returns instance"| AfstandsMeterInterface
+    AfstandsMeterInterface <-.->|"implements"| Spatial4JImpl
+    Spatial4JImpl -->|"Uses library"| Spatial4J
+    
+    BestellingService -->|"Get current time"| Clock
+    BestellingService -->|"Filter top 7 koeriers"| TopN
+    
+    Koerier -->|"Calculate distance"| AfstandsMeterInterface
+    Koerier -->|"Time for events"| Clock
+    
+    Spatial4JImpl -.->|"Takes as input"| Position
+    BestelEvent -.->|"Uses for timestamp"| Clock
+    DeliveryPointEvent -.->|"Uses for timestamp"| Clock
+    
+    style AfstandsMeterFactory fill:#ffdb4d,stroke:#cc9900,color:#000000,stroke-width:3px
+    style AfstandsMeterInterface fill:#ffffcc,stroke:#cc9900,color:#000000,stroke-width:2px
+    style Spatial4JImpl fill:#fff4cc,stroke:#cc9900,color:#000000,stroke-width:2px
+    style Clock fill:#ffdb4d,stroke:#cc9900,color:#000000,stroke-width:3px
+    style TopN fill:#ffdb4d,stroke:#cc9900,color:#000000,stroke-width:3px
+    style Position fill:#c9e7f2,stroke:#5d82a8,color:#000000
+    style BestelEvent fill:#c9e7f2,stroke:#5d82a8,color:#000000
+    style DeliveryPointEvent fill:#c9e7f2,stroke:#5d82a8,color:#000000
+    style Spatial4J fill:#999999,stroke:#6b6b6b,color:#ffffff,stroke-width:2px
+    style BestellingService fill:#66b3ff,stroke:#0066cc,color:#000000
+    style Koerier fill:#c9e7f2,stroke:#5d82a8,color:#000000

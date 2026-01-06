@@ -1,0 +1,27 @@
+C4Dynamic
+title Dynamic diagram for <Use-case Name>
+
+Person(user, "<Primary User>", "Triggers the use-case")
+
+System_Boundary(sb, "<Your Software System>") {
+  Container(web, "<Web App>", "UI")
+  Container(api, "<API Application>", "Backend")
+  ContainerDb(db, "<Primary Database>", "SQL")
+  Container(queue, "<Message Broker>", "Async")
+  Container(worker, "<Background Worker>", "Jobs")
+}
+
+System_Ext(extPay, "<Payment Provider>", "Payments")
+System_Ext(extMsg, "<Messaging Provider>", "Notifications")
+
+%% Numbered interactions
+Rel(user, web, "1. Performs action", "HTTPS")
+Rel(web, api, "2. Sends request", "JSON/HTTPS")
+
+Rel(api, db, "3. Loads data", "SQL")
+Rel(api, extPay, "4. Creates payment", "HTTPS")
+Rel(api, db, "5. Stores result", "SQL")
+
+Rel(api, queue, "6. Publishes event", "AMQP/HTTP")
+Rel(queue, worker, "7. Delivers event", "AMQP/HTTP")
+Rel(worker, extMsg, "8. Sends notification", "API")

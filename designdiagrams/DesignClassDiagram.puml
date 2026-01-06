@@ -1,0 +1,235 @@
+@startuml
+' =========================
+' STYLE (optional)
+' =========================
+hide empty members
+skinparam classAttributeIconSize 0
+
+' =========================
+' PACKAGE (domain layer)
+' =========================
+package "be.kdg.model (Domain)" {
+
+  ' -------------------------
+  ' INTERFACES (realization)
+  ' -------------------------
+  interface ComparableRaceBike {
+    + compareTo(other: RaceBike) : int
+  }
+
+
+  interface Identifiable {
+    + getId() : UUID
+  }
+
+  ' -------------------------
+  ' ABSTRACT CLASS (generalization)
+  ' -------------------------
+  abstract class Entity {
+    - id : UUID
+    + getId() : UUID
+  }
+
+  ' -------------------------
+  ' DOMAIN CLASS (RaceBike)
+  ' -------------------------
+  class RaceBike {
+    - brand : Brand
+    - model : String
+    - color : Color
+    - weight : double
+    - frameSize : int
+    - releaseDate : LocalDate
+    - price : BigDecimal
+    - currency : Currency
+    - groupset : Groupset
+    - frameMaterial : FrameMaterial
+    - forkMaterial : ForkMaterial
+    - brakeType : BrakeType
+    - wheelSize : WheelSize
+
+    + {static} compareCounter : int
+    + {static} equalsCounter : int
+
+    + getBrand() : Brand
+    + getModel() : String
+    + getColor() : Color
+    + getWeight() : double
+    + getFrameSize() : int
+    + getReleaseDate() : LocalDate
+    + getPrice() : BigDecimal
+    + getCurrency() : Currency
+    + getGroupset() : Groupset
+    + getFrameMaterial() : FrameMaterial
+    + getForkMaterial() : ForkMaterial
+    + getBrakeType() : BrakeType
+    + getWheelSize() : WheelSize
+
+    + setBrand(brand: Brand) : void
+    + setModel(model: String) : void
+    + setColor(color: Color) : void
+    + setWeight(weight: double) : void
+    + setFrameSize(frameSize: int) : void
+    + setReleaseDate(date: LocalDate) : void
+    + setPrice(price: BigDecimal) : void
+    + setCurrency(currency: Currency) : void
+    + setGroupset(groupset: Groupset) : void
+    + setFrameMaterial(material: FrameMaterial) : void
+    + setForkMaterial(material: ForkMaterial) : void
+    + setBrakeType(type: BrakeType) : void
+    + setWheelSize(size: WheelSize) : void
+
+    + equals(obj: Object) : boolean
+    + hashCode() : int
+    + compareTo(other: RaceBike) : int
+    + toString() : String
+  }
+
+  ' -------------------------
+  ' ENUMS (correct PlantUML syntax = one literal per line)
+  ' -------------------------
+  enum WheelSize {
+    ROAD_700C
+    GRAVEL_650B
+    MOUNTAIN_26
+    MOUNTAIN_27_5
+    MOUNTAIN_29
+    TIME_TRIAL_650C
+  }
+
+  enum FrameMaterial {
+    CARBON
+    ALUMINIUM
+    STEEL
+    TITANIUM
+    MAGNESIUM
+    SCANDIUM
+  }
+
+  enum ForkMaterial {
+    CARBON
+    ALUMINIUM
+    STEEL
+    TITANIUM
+  }
+
+  enum Color {
+    RED
+    BLUE
+    GREEN
+    YELLOW
+    ORANGE
+    PURPLE
+    BLACK
+    WHITE
+    BROWN
+  }
+
+  enum Brand {
+    CERVELO
+    COLNAGO
+    BIANCHI
+    CANYON
+    PINARELLO
+    ORBEA
+    SPECIALIZED
+    GIANT
+    TREK
+    BMC
+    SCOTT
+    WILIER
+    RIDLEY
+    CUBE
+    MERIDA
+    UNKNOWN
+  }
+
+  enum BrakeType {
+    RIM_CALIPER
+    RIM_CANTILEVER
+    DISC_MECHANICAL
+    DISC_HYDRAULIC
+  }
+
+  enum Currency {
+    EUR
+    USD
+    GBP
+    JPY
+    CAD
+    AUD
+    CHF
+    CNY
+  }
+
+  enum Groupset {
+    SHIMANO_105
+    SRAM_FORCE_ETAP_AXS
+    CAMPAGNOLO_CHORUS
+    CUSTOM_BUILD
+  }
+
+  ' -------------------------
+  ' FACTORY (dependency «create»)
+  ' -------------------------
+  class RaceBikeFactory <<factory>> {
+    - {static} RANDOM : Random
+    + {static} newEmptyRaceBike() : RaceBike
+    + {static} newFilledRaceBike(...) : RaceBike
+    + {static} newRandomRaceBike() : RaceBike
+  }
+
+' =========================
+' RELATIONSHIPS (UML types)
+' =========================
+
+' 1) Realization (class implements interface)
+ComparableRaceBike <|.. RaceBike
+
+' (Optional) show interface realization too
+Identifiable <|.. Entity
+
+' 2) Generalization (inheritance)
+Entity <|-- RaceBike
+
+' 3) Association (navigable)
+class Rider
+Rider "1" --> "0..*" RaceBike : owns
+
+' 4) Bidirectional association
+class BikeShop
+BikeShop "1" -- "0..*" Rider : serves
+
+' 5) Aggregation (shared / weak whole-part)
+class Team
+Team "1" -- "0..*" Rider : members
+
+' 6) Composition (strong whole-part, lifecycle)
+class Wheelset
+class Wheel
+Wheelset "1" *-- "2" Wheel : contains
+
+' 7) Dependency (uses; incl. «create»)
+RaceBikeFactory ..> RaceBike : <<create>>
+
+' 8) Association class (relationship with attributes) - compatible form
+class Rental {
+  - start : LocalDate
+  - end : LocalDate
+  - dailyRate : BigDecimal
+}
+
+' Use a relationship node to represent an association class
+Rider "1" -- "0..*" RaceBike : rents
+(Rider, RaceBike) .. Rental
+
+
+' 9) Qualified association (visual qualifier via note on link)
+class Inventory
+Inventory "1" --> "0..*" RaceBike : bikes
+note on link
+  qualifier: serialNumber : String
+end note
+}
+
+@enduml

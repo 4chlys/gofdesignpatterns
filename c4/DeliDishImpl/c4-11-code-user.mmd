@@ -1,0 +1,99 @@
+﻿classDiagram
+    class Partij {
+        <<abstract>>
+        <<Entity>>
+        -contactInfo : ContactInfo
+        -rekeningnummer : Rekeningnummer
+        +Partij(ContactInfo, Rekeningnummer)
+        +getContactInfo() ContactInfo
+        +getEmail() String
+        +getRekeningnummer() Rekeningnummer
+        +getAdres() Adres
+        +getPosition() Position
+    }
+    
+    class Persoon {
+        <<Entity>>
+        -voornaam : String
+        -achternaam : String
+        +Persoon(String, String, ContactInfo, Rekeningnummer)
+        +getVoornaam() String
+        +getAchternaam() String
+        +getNaam() String
+    }
+    
+    class Klant {
+        <<Entity>>
+        +Klant(String, String, ContactInfo)
+        +Klant(String, String, ContactInfo, Rekeningnummer)
+    }
+    
+    class Koerier {
+        <<Entity>>
+        -deliveryPoints : int
+        -deliveryPointEvents : List~DeliveryPointEvent~
+        -laatstePositie : Position
+        -clock : Clock
+        -available : boolean
+        +Koerier(String, String, ContactInfo, Rekeningnummer, boolean)
+        +getDeliveryPoints() int
+        +setDeliveryPoints(int) void
+        +addDeliveryPoints(int, String) void
+        +getDeliveryPointGebeuren() List~DeliveryPointEvent~
+        +getDeliveryPointEvents() List~DeliveryPointEvent~
+        +getLaatstePositie() Position
+        +setLaatstePositie(Position) void
+        +updatePosition(Position) void
+        +setClock(Clock) void
+        +isAvailable() boolean
+        +setAvailable(boolean) void
+        +getMinutenNaarAdres(Adres) double
+        +aankomstTijdVoorAdres(Adres) LocalDateTime
+    }
+    
+    class DeliveryPointEvent {
+        <<Event>>
+        -points : int
+        -time : LocalDateTime
+        -type : DeliveryPointEventType
+        +DeliveryPointEvent(int, DeliveryPointEventType)
+        +DeliveryPointEvent(int, DeliveryPointEventType, Clock)
+        +getPoints() int
+        +getTime() LocalDateTime
+        +getType() DeliveryPointEventType
+        +getType() String
+    }
+    
+    class DeliveryPointEventType {
+        <<enumeration>>
+        BEZORGING_AANVAARD
+        BEZORGING_VOLTOOID
+        PICKUP_ONTIME
+        PICKUP_LATE
+        DELIVERY_ONTIME
+        DELIVERY_LATE
+    }
+    
+    %% Inheritance hierarchy
+    Partij <|-- Persoon : extends
+    Persoon <|-- Klant : extends
+    Persoon <|-- Koerier : extends
+    
+    %% Koerier relationships
+    Koerier "1" *-- "*" DeliveryPointEvent : tracks history >
+    Koerier --> "1" Position : has current
+    Koerier ..> Clock : uses for events
+    DeliveryPointEvent --> "1" DeliveryPointEventType : has type
+    
+    %% External references
+    Partij --> ContactInfo : has
+    Partij --> Rekeningnummer : has
+    Koerier ..> AfstandsMeter : calculates distance
+    
+    note for Partij "Abstract base class:<br/>- Common attributes for all parties<br/>- Email from contactInfo is unique key<br/>- Position derived from contactInfo.adres<br/><br/>Subclasses:<br/>- Persoon (voornaam, achternaam)<br/>- Restaurant (naam, gerechten)<br/><br/>Used by:<br/>- Authentication system<br/>- Payment processing"
+    
+    note for Koerier "Core entity for delivery system:<br/><br/>DeliveryPoints System:<br/>- Points earned: +5 accept, +10 ontime<br/>- Points lost: -10 late pickup/delivery<br/>- Daily decay: -2 points (inactivity)<br/>- Used for premium filtering (top 7)<br/><br/>Availability:<br/>- available=true → can receive orders<br/>- available=false → offline<br/>- Toggle via mobile app<br/><br/>Distance Calculation:<br/>- getMinutenNaarAdres() uses AfstandsMeter<br/>- Formula: distance_km * 3 minutes<br/>- Used to check if can pickup before ready"
+    
+    note for DeliveryPointEvent "Event Sourcing:<br/>- Immutable audit trail<br/>- All point changes recorded<br/>- Time from injected Clock<br/><br/>Event Types:<br/>- BEZORGING_AANVAARD: +40 points<br/>- PICKUP_ONTIME: +50 points<br/>- PICKUP_LATE: -20 points<br/>- DELIVERY_ONTIME: +60 points<br/>- DELIVERY_LATE: -25 points<br/>- BEZORGING_VOLTOOID: marks complete<br/><br/>Koeriers can query full history"
+    
+    note for Klant "Customer entity:<br/>- Minimal attributes<br/>- Places orders via web/mobile<br/>- Can have multiple delivery addresses<br/>- Optional rekeningnummer<br/><br/>Relationships:<br/>- 1 Klant → many Bestellingen<br/>- Tracked by email (unique)"

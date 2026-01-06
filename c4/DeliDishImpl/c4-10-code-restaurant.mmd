@@ -1,0 +1,108 @@
+﻿classDiagram
+    class Restaurant {
+        <<Aggregate Root>>
+        -naam : String
+        -observers : List~BestellingObserver~
+        -openingSchedule : List~OpeningPeriod~
+        -gerechts : List~Gerecht~
+        +Restaurant(String, ContactInfo, Rekeningnummer)
+        +addOpening(OpeningPeriod) void
+        +addDish(Gerecht) void
+        +getDish(int) Gerecht
+        +getPosition() Position
+        +registreerObserver(BestellingObserver) void
+        +notifyObservers(Bestelling, BestelEvent) void
+        +getNaam() String
+        +getAdres() Adres
+        +getEmail() String
+        +getGerechten() List~Gerecht~
+    }
+    
+    class Gerecht {
+        <<Entity>>
+        -id : int
+        -naam : String
+        -beschijving : String
+        -prijs : double
+        -allergenen : List~Allergeen~
+        -bereidingstijd : int
+        -maximumLevertijd : int
+        -restaurant : Restaurant
+        -bestelbaar : boolean
+        +Gerecht(int, String, String, double, List, int, int, Restaurant)
+        +getId() int
+        +setId(int) void
+        +isBestelbaar() boolean
+        +setBestelbaar(boolean) void
+        +getResto() Restaurant
+        +getBereidingstijd() int
+        +getNaam() String
+        +getBeschijving() String
+        +getPrijs() double
+        +getAllergenen() List~Allergeen~
+        +getMaximumLevertijd() int
+        +getRestaurant() Restaurant
+        +setBereidingstijd(int) void
+    }
+    
+    class SamengesteldGerecht {
+        <<Entity>>
+        -componenten : List~Gerecht~
+        +SamengesteldGerecht(int, String, String, double, List, int, int, Restaurant)
+        +addComponent(Gerecht) void
+        +removeComponent(Gerecht) void
+        +getComponenten() List~Gerecht~
+        +getBereidingstijd() int
+        +isBestelbaar() boolean
+    }
+    
+    class Allergeen {
+        <<enumeration>>
+        GLUTEN
+        SCHAALDIEREN
+        EI
+        VIS
+        PINDAS
+        SOYA
+        MELK
+        NOTEN
+        SELDER
+        MOSTERD
+        SESAMZAAD
+        SULFIET
+        LUPINE
+        MOSSELEN
+    }
+    
+    class OpeningPeriod {
+        <<Value Object>>
+        -weekday : DayOfWeek
+        -opening : LocalTime
+        -closing : LocalTime
+        +OpeningPeriod(DayOfWeek, LocalTime, LocalTime)
+        +getWeekday() DayOfWeek
+        +getOpening() LocalTime
+        +getClosing() LocalTime
+    }
+    
+    %% Relationships
+    Restaurant "1" *-- "*" Gerecht : contains >
+    Restaurant "1" *-- "*" OpeningPeriod : has schedule >
+    Restaurant "1" o-- "*" BestellingObserver : notifies >
+    SamengesteldGerecht --|> Gerecht : extends
+    SamengesteldGerecht "1" o-- "*" Gerecht : composed of >
+    Gerecht --> "*" Allergeen : has
+    Gerecht --> "1" Restaurant : belongs to
+    
+    %% External references
+    Restaurant --|> Partij : is a
+    Restaurant --> ContactInfo : has
+    Restaurant --> Rekeningnummer : has
+    
+    note for Restaurant "Aggregate Root:<br/>- Manages all gerechten<br/>- Controls observer notifications<br/>- Position derived from contactInfo.adres<br/><br/>Observer Pattern:<br/>- Notifies on order acceptance<br/>- Used for koerier notifications<br/><br/>Invariants:<br/>- Naam must be unique<br/>- Must have at least 1 opening period<br/>- Email must be valid"
+    
+    note for Gerecht "Entity within Restaurant aggregate:<br/>- ID unique within restaurant<br/>- Bereidingstijd in minutes<br/>- MaximumLevertijd constraint:<br/>  delivery time ≤ maximumLevertijd<br/><br/>Business Rules:<br/>- Bestelbaar flag controls visibility<br/>- Prijs must be > 0<br/>- At least 1 allergeen declared"
+    
+    note for SamengesteldGerecht "Composite Pattern:<br/>- Can contain other gerechten<br/>- Bereidingstijd = max(own time, max component time)<br/>- isBestelbaar() = all components bestelbaar<br/><br/>Example:<br/>'Steak Menu' contains:<br/>- Steak (15 min)<br/>- Fries (4 min)<br/>- Sauce (0 min)<br/>Total bereidingstijd = 15 min"
+    
+    note for OpeningPeriod "Value Object:<br/>- Immutable<br/>- Represents one opening slot<br/>- Example: MONDAY 11:00-14:00<br/><br/>Validation:<br/>- closing > opening<br/>- Times in restaurant timezone"
