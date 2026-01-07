@@ -18,6 +18,9 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
+    cucumberRuntime {
+        extendsFrom testImplementation
+    }
 }
 
 repositories {
@@ -26,23 +29,68 @@ repositories {
 
 ext {
     set('springModulithVersion', "2.0.1")
+    set('cucumberVersion', '7.18.1')
 }
 
 dependencies {
+    // ========================================================================
+    // EXISTING DEPENDENCIES
+    // ========================================================================
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.modulith:spring-modulith-starter-core'
     implementation 'org.springframework.modulith:spring-modulith-starter-jdbc'
+
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+
     runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
     runtimeOnly 'com.mysql:mysql-connector-j'
     runtimeOnly 'org.postgresql:postgresql'
+
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    // ========================================================================
+    // SPRING DEPENDENCY INJECTION SUPPORT
+    // ========================================================================
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
+
+    // Configuration properties validation (optional)
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // ========================================================================
+    // CUCUMBER BDD TESTING DEPENDENCIES
+    // ========================================================================
+
+    // Cucumber Core
+    testImplementation "io.cucumber:cucumber-java:${cucumberVersion}"
+    testImplementation "io.cucumber:cucumber-spring:${cucumberVersion}"
+
+    // Cucumber JUnit Platform integration
+    testImplementation "io.cucumber:cucumber-junit-platform-engine:${cucumberVersion}"
+    testImplementation 'org.junit.platform:junit-platform-suite:1.10.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+
+    // Cucumber dependency injection (optional - alternative to Spring)
+    // testImplementation "io.cucumber:cucumber-picocontainer:${cucumberVersion}"
+
+    // Enhanced assertions
+    testImplementation 'org.assertj:assertj-core:3.25.1'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
+
+    // ========================================================================
+    // EXISTING TEST DEPENDENCIES
+    // ========================================================================
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-data-jdbc-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-jdbc-test'
     testImplementation 'org.springframework.modulith:spring-modulith-starter-test'
+
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // In-memory database for testing
+    testImplementation 'com.h2database:h2:2.2.224'
 }
 
 dependencyManagement {
@@ -51,6 +99,155 @@ dependencyManagement {
     }
 }
 
+// ============================================================================
+// TEST TASK CONFIGURATION
+// ============================================================================
+
 tasks.named('test') {
     useJUnitPlatform()
+
+    // Configure Cucumber reporting
+    systemProperty 'cucumber.junit-platform.naming-strategy', 'long'
+    systemProperty 'cucumber.plugin', '''
+        pretty,
+        html:build/reports/cucumber/cucumber-report.html,
+        json:build/reports/cucumber/cucumber.json,
+        junit:build/reports/cucumber/cucumber.xml
+    '''.trim()
+
+    // Optionally filter by tags
+    // systemProperty 'cucumber.filter.tags', '@smoke'
+
+    // Configure test output
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        showStandardStreams = false
+        showStackTraces = true
+    }
 }
+
+// ============================================================================
+// CUSTOM GRADLE TASKS
+// ============================================================================
+
+// Run only Cucumber tests
+tasks.register('cucumber', Test) {
+    useJUnitPlatform {
+        includeTags 'cucumber'
+    }
+
+    description = 'Run Cucumber BDD tests'
+    group = 'verification'
+
+    systemProperty 'cucumber.junit-platform.naming-strategy', 'long'
+    systemProperty 'cucumber.plugin', '''
+        pretty,
+        html:build/reports/cucumber/cucumber-report.html,
+        json:build/reports/cucumber/cucumber.json,
+        junit:build/reports/cucumber/cucumber.xml
+    '''.trim()
+
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+}
+
+// Run smoke tests only
+tasks.register('cucumberSmoke', Test) {
+    useJUnitPlatform()
+
+    description = 'Run Cucumber smoke tests'
+    group = 'verification'
+
+    systemProperty 'cucumber.filter.tags', '@smoke'
+    systemProperty 'cucumber.plugin', 'pretty, html:build/reports/cucumber/smoke-report.html'
+
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+// Run integration tests only
+tasks.register('cucumberIntegration', Test) {
+    useJUnitPlatform()
+
+    description = 'Run Cucumber integration tests'
+    group = 'verification'
+
+    systemProperty 'cucumber.filter.tags', '@integration or @database'
+    systemProperty 'cucumber.plugin', 'pretty, html:build/reports/cucumber/integration-report.html'
+
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+// Run all tests except work-in-progress
+tasks.register('cucumberNotWip', Test) {
+    useJUnitPlatform()
+
+    description = 'Run all Cucumber tests except @wip'
+    group = 'verification'
+
+    systemProperty 'cucumber.filter.tags', 'not @wip'
+    systemProperty 'cucumber.plugin', 'pretty, html:build/reports/cucumber/main-report.html'
+
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+// Run fast tests only
+tasks.register('cucumberFast', Test) {
+    useJUnitPlatform()
+
+    description = 'Run fast Cucumber tests'
+    group = 'verification'
+
+    systemProperty 'cucumber.filter.tags', '@fast and not @slow'
+    systemProperty 'cucumber.plugin', 'pretty, html:build/reports/cucumber/fast-report.html'
+
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+// ============================================================================
+// USAGE EXAMPLES
+// ============================================================================
+
+/*
+GRADLE COMMANDS:
+
+# Run all tests (including Cucumber):
+./gradlew test
+
+# Run only Cucumber tests:
+./gradlew cucumber
+
+# Run smoke tests:
+./gradlew cucumberSmoke
+
+# Run integration tests:
+./gradlew cucumberIntegration
+
+# Run fast tests:
+./gradlew cucumberFast
+
+# Run without work-in-progress:
+./gradlew cucumberNotWip
+
+# Run with custom tags from command line:
+./gradlew test -Dcucumber.filter.tags="@smoke and @fast"
+./gradlew test -Dcucumber.filter.tags="@database or @web"
+./gradlew test -Dcucumber.filter.tags="not @slow"
+
+# Clean and test:
+./gradlew clean test
+
+# View test report:
+# Open: build/reports/tests/test/index.html
+# Open: build/reports/cucumber/cucumber-report.html
+*/

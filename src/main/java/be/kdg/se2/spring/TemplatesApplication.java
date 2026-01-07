@@ -1,4 +1,4 @@
-package be.kdg.se2.gofdesignpatterns;
+package be.kdg.se2.spring;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
