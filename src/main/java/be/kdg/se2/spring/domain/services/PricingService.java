@@ -10,7 +10,7 @@ public class PricingService {
         if (customer.isVIP() && order.getTotalAmount().isGreaterThan(Money.of(1000))) {
             return order.getTotalAmount().multiply(0.1);
         }
-        return Money.ZERO;
+        return Money.of(0);
     }
 
     public Money calculateShipping(Order order, Address address) {
